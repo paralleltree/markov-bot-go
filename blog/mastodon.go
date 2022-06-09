@@ -124,6 +124,7 @@ func (c *MastodonClient) FetchUserId() (string, error) {
 func (c *MastodonClient) CreateStatus(payload string, visibility string) (string, error) {
 	form := url.Values{}
 	form.Add("status", payload)
+	form.Add("visibility", visibility)
 	body := strings.NewReader(form.Encode())
 
 	req, err := http.NewRequest("POST", c.buildUrl("/api/v1/statuses"), body)

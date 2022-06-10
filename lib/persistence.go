@@ -8,8 +8,11 @@ import (
 )
 
 type PersistentStore interface {
-	// Returns data stream and its modified time.
-	Load() ([]byte, time.Time, error)
+	// Returns data stream.
+	Load() ([]byte, error)
+
+	// Returns modified time of the stream.
+	ModTime() (time.Time, error)
 
 	// Saves given data stream.
 	Save(data []byte) error
@@ -25,28 +28,32 @@ func NewFileStore(path string) PersistentStore {
 	}
 }
 
-func (s *FileStore) Load() ([]byte, time.Time, error) {
+func (s *FileStore) Load() ([]byte, error) {
 	f, err := os.Open(s.path)
 	if err != nil {
-		return nil, time.Time{}, err
+		return nil, err
 	}
 	defer f.Close()
 
-	stat, err := os.Stat(s.path)
-	if err != nil {
-		return nil, time.Time{}, err
-	}
-
 	r, err := gzip.NewReader(f)
 	if err != nil {
-		return nil, time.Time{}, err
+		return nil, err
 	}
 
 	stream, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, time.Time{}, err
+		return nil, err
 	}
-	return stream, stat.ModTime(), nil
+	return stream, nil
+}
+
+func (s *FileStore) ModTime() (time.Time, error) {
+	stat, err := os.Stat(s.path)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return stat.ModTime(), nil
 }
 
 func (s *FileStore) Save(data []byte) error {

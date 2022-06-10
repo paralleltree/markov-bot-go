@@ -35,7 +35,7 @@ func GenerateAndPost(client *blog.MastodonClient, store lib.PersistentStore, min
 }
 
 func loadModel(store lib.PersistentStore) (*markov.Chain, error) {
-	data, _, err := store.Load()
+	data, err := store.Load()
 	if err != nil {
 		return nil, fmt.Errorf("load chain data: %v", err)
 	}

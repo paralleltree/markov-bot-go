@@ -20,6 +20,7 @@ const (
 	StateSizeKey         = "state-size"
 	FetchStatusCountKey  = "fetch-status-count"
 	MinWordsCount        = "min-words-count"
+	ExpiresInKey         = "expires-in"
 	DryRunKey            = "dry-run"
 )
 
@@ -77,6 +78,12 @@ func main() {
 			EnvVars: []string{"MIN_WORDS_COUNT"},
 			Value:   1,
 		},
+		&cli.IntFlag{
+			Name:    ExpiresInKey,
+			Usage:   "specifies the duration to expire the model in seconds.",
+			EnvVars: []string{"EXPIRES_IN"},
+			Value:   60 * 60 * 24,
+		},
 	}
 
 	app := cli.App{
@@ -106,8 +113,11 @@ func main() {
 				Action: func(c *cli.Context) error {
 					srcClient := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey))
 					postClient := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey))
-					if err := handler.BuildChain(srcClient, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store); err != nil {
-						return err
+					mod, err := store.ModTime()
+					if err != nil || float64(c.Int(ExpiresInKey)) < time.Since(mod).Seconds() {
+						if err := handler.BuildChain(srcClient, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store); err != nil {
+							return err
+						}
 					}
 					return handler.GenerateAndPost(postClient, store, c.Int(MinWordsCount), c.Bool(DryRunKey))
 				},

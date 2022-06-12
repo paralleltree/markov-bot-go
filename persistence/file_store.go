@@ -1,4 +1,4 @@
-package lib
+package persistence
 
 import (
 	"compress/gzip"
@@ -7,28 +7,17 @@ import (
 	"time"
 )
 
-type PersistentStore interface {
-	// Returns data stream.
-	Load() ([]byte, error)
-
-	// Returns modified time of the stream.
-	ModTime() (time.Time, error)
-
-	// Saves given data stream.
-	Save(data []byte) error
-}
-
-type FileStore struct {
+type fileStore struct {
 	path string
 }
 
 func NewFileStore(path string) PersistentStore {
-	return &FileStore{
+	return &fileStore{
 		path: path,
 	}
 }
 
-func (s *FileStore) Load() ([]byte, error) {
+func (s *fileStore) Load() ([]byte, error) {
 	f, err := os.Open(s.path)
 	if err != nil {
 		return nil, err
@@ -47,7 +36,7 @@ func (s *FileStore) Load() ([]byte, error) {
 	return stream, nil
 }
 
-func (s *FileStore) ModTime() (time.Time, error) {
+func (s *fileStore) ModTime() (time.Time, error) {
 	stat, err := os.Stat(s.path)
 	if err != nil {
 		return time.Time{}, err
@@ -56,7 +45,7 @@ func (s *FileStore) ModTime() (time.Time, error) {
 	return stat.ModTime(), nil
 }
 
-func (s *FileStore) Save(data []byte) error {
+func (s *fileStore) Save(data []byte) error {
 	f, err := os.Create(s.path)
 	if err != nil {
 		return err

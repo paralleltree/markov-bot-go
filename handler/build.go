@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/paralleltree/markov-bot-go/blog"
-	"github.com/paralleltree/markov-bot-go/lib"
 	"github.com/paralleltree/markov-bot-go/markov"
 	"github.com/paralleltree/markov-bot-go/morpheme"
+	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func BuildChain(client *blog.MastodonClient, fetchStatusCount int, stateSize int, store lib.PersistentStore) error {
+func BuildChain(client *blog.MastodonClient, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
 	uid, err := client.FetchUserId()

@@ -8,7 +8,7 @@ import (
 
 	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/handler"
-	"github.com/paralleltree/markov-bot-go/lib"
+	"github.com/paralleltree/markov-bot-go/persistence"
 	"github.com/urfave/cli/v2"
 )
 
@@ -27,7 +27,7 @@ const (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	store := lib.NewFileStore(".cache/model")
+	store := persistence.NewFileStore(".cache/model")
 
 	buildingFlags := []cli.Flag{
 		&cli.StringFlag{

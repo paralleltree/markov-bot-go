@@ -2,3 +2,6 @@
 .envrc
 
 .cache
+
+.aws-sam/
+samconfig.toml

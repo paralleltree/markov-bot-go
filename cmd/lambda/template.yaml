@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  markov-bot
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 90
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Default: markov-bot
+    Description: Enter the name of s3 bucket to store configuration and model.
+
+Resources:
+  MarkovBotFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      PackageType: Image
+      ImageConfig:
+        EntryPoint: ["/app/lambda"]
+      Architectures:
+        - x86_64
+      Role: !GetAtt MarkovBotFunctionIamRole.Arn
+    Metadata:
+      Dockerfile: Dockerfile
+      DockerContext: ../../
+      DockerTag: markov-bot
+
+  MarkovBotFunctionIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "sts:AssumeRole"
+            Principal:
+              Service: lambda.amazonaws.com
+      Policies:
+        - PolicyName: markov-bot-policy
+          PolicyDocument: {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": [
+                      "s3:*",
+                      "s3-object-lambda:*"
+                    ],
+                    "Resource": [
+                      "Fn::Sub": "${MarkovBotBucket.Arn}",
+                      "Fn::Sub": "${MarkovBotBucket.Arn}/*"
+                    ]
+                  }
+                ]
+              }
+
+  MarkovBotBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Ref: S3BucketName
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  MarkovBotFunction:
+    Description: "markov-bot function ARN"
+    Value: !GetAtt MarkovBotFunction.Arn
+  MarkovBotFunctionIamRole:
+    Description: "IAM Role created for markov bot function"
+    Value: !GetAtt MarkovBotFunctionIamRole.Arn
+  MarkovBotBucket:
+    Description: "S3 bucket created for markov bot function"
+    Value: !GetAtt MarkovBotBucket.Arn

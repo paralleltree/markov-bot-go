@@ -1,0 +1,7 @@
+source_domain:
+source_access_token:
+post_domain:
+post_access_token:
+fetch_status_count: 300
+state_size: 3
+min_words_count: 1

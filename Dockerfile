@@ -10,9 +10,11 @@ FROM golang:1.18.2-alpine AS build-cli
 ADD . /src
 WORKDIR /src
 RUN GOOS=linux go build -o bot cmd/cli/main.go
+RUN GOOS=linux go build -o lambda cmd/lambda/main.go
 
 FROM alpine
 WORKDIR /app
 RUN apk --no-cache add libstdc++ libgcc
 COPY --from=build-mecab /usr/local /usr/local
 COPY --from=build-cli /src/bot /app
+COPY --from=build-cli /src/lambda /app

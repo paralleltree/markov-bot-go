@@ -3,8 +3,10 @@ module github.com/paralleltree/markov-bot-go
 go 1.18
 
 require (
+	github.com/aws/aws-lambda-go v1.32.0
 	github.com/aws/aws-sdk-go v1.44.32
 	github.com/urfave/cli/v2 v2.8.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

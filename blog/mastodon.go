@@ -20,12 +20,14 @@ const (
 type MastodonClient struct {
 	Domain      string
 	AccessToken string
+	client      *http.Client
 }
 
 func NewMastodonClient(domain, accessToken string) *MastodonClient {
 	return &MastodonClient{
 		Domain:      domain,
 		AccessToken: accessToken,
+		client:      &http.Client{},
 	}
 }
 
@@ -61,8 +63,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 		return nil, "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, "", fmt.Errorf("get statuses: %v", err)
 	}
@@ -99,8 +100,7 @@ func (c *MastodonClient) FetchUserId() (string, error) {
 		return "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("get account details: %v", err)
 	}
@@ -133,8 +133,7 @@ func (c *MastodonClient) CreateStatus(payload string, visibility string) (string
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-	client := &http.Client{}
-	res, err := client.Do(req)
+	res, err := c.client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("post status: %v", err)
 	}

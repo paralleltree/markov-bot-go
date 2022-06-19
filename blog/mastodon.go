@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
+	"github.com/paralleltree/markov-bot-go/lib"
 )
 
 const (
@@ -31,23 +33,25 @@ func NewMastodonClient(domain, accessToken string) *MastodonClient {
 	}
 }
 
-func (c *MastodonClient) FetchLatestPublicStatuses(userId string, count int) ([]string, error) {
-	res := []string{}
+func (c *MastodonClient) FetchLatestPublicStatuses(userId string, count int) lib.IteratorFunc[string] {
 	maxId := ""
-	for count > 0 {
+	return func() ([]string, bool, error) {
+		if count == 0 {
+			return nil, false, nil
+		}
+
 		chunkSize := 100
 		if count < chunkSize {
 			chunkSize = count
 		}
 		statuses, nextMaxId, err := c.fetchPublicStatusesChunk(userId, chunkSize, maxId)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		res = append(res, statuses...)
 		maxId = nextMaxId
 		count -= len(statuses)
+		return statuses, true, nil
 	}
-	return res, nil
 }
 
 // Returns status slice and minimum status id to fetch next older statuses.

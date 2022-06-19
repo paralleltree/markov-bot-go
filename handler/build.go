@@ -16,19 +16,27 @@ func BuildChain(client *blog.MastodonClient, fetchStatusCount int, stateSize int
 	if err != nil {
 		return fmt.Errorf("fetch user id: %v", err)
 	}
-	statuses, err := client.FetchLatestPublicStatuses(uid, fetchStatusCount)
-	if err != nil {
-		return fmt.Errorf("fetch statuses: %v", err)
-	}
 
 	chain := markov.NewChain(stateSize)
-	for _, s := range statuses {
-		result, err := analyzer.Analyze(s)
+	iterator := client.FetchLatestPublicStatuses(uid, fetchStatusCount)
+
+	for {
+		statuses, hasNext, err := iterator()
 		if err != nil {
-			return fmt.Errorf("analyze text: %v", err)
+			return fmt.Errorf("fetch statuses: %v", err)
 		}
-		for _, v := range result {
-			chain.AddSource(v)
+		if !hasNext {
+			break
+		}
+
+		for _, s := range statuses {
+			result, err := analyzer.Analyze(s)
+			if err != nil {
+				return fmt.Errorf("analyze text: %v", err)
+			}
+			for _, v := range result {
+				chain.AddSource(v)
+			}
 		}
 	}
 

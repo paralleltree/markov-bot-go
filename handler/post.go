@@ -12,7 +12,7 @@ import (
 func GenerateAndPost(client *blog.MastodonClient, store persistence.PersistentStore, minWordsCount int, dryRun bool) error {
 	model, err := loadModel(store)
 	if err != nil {
-		return fmt.Errorf("load model: %v", err)
+		return fmt.Errorf("load model: %w", err)
 	}
 
 	for {
@@ -26,7 +26,7 @@ func GenerateAndPost(client *blog.MastodonClient, store persistence.PersistentSt
 			fmt.Println(text)
 		} else {
 			if _, err := client.CreateStatus(text, blog.StatusUnlisted); err != nil {
-				return fmt.Errorf("create status: %v", err)
+				return fmt.Errorf("create status: %w", err)
 			}
 		}
 		break
@@ -37,11 +37,11 @@ func GenerateAndPost(client *blog.MastodonClient, store persistence.PersistentSt
 func loadModel(store persistence.PersistentStore) (*markov.Chain, error) {
 	data, err := store.Load()
 	if err != nil {
-		return nil, fmt.Errorf("load chain data: %v", err)
+		return nil, fmt.Errorf("load chain data: %w", err)
 	}
 	chain, err := markov.LoadChain(data)
 	if err != nil {
-		return nil, fmt.Errorf("reconstruct chain: %v", err)
+		return nil, fmt.Errorf("reconstruct chain: %w", err)
 	}
 	return chain, nil
 }

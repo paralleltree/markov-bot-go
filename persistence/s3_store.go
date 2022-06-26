@@ -23,7 +23,7 @@ func NewS3Store(
 ) (PersistentStore, error) {
 	sess, err := session.NewSession(&aws.Config{Region: &region})
 	if err != nil {
-		return nil, fmt.Errorf("create s3 store: %v", err)
+		return nil, fmt.Errorf("create s3 store: %w", err)
 	}
 
 	return &s3Store{
@@ -38,7 +38,7 @@ func (s *s3Store) Load() ([]byte, error) {
 	buf := aws.NewWriteAtBuffer([]byte{})
 	_, err := d.Download(buf, &s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
 	if err != nil {
-		return nil, fmt.Errorf("download object: %v", err)
+		return nil, fmt.Errorf("download object: %w", err)
 	}
 	return buf.Bytes(), nil
 }
@@ -57,7 +57,7 @@ func (s *s3Store) Save(data []byte) error {
 	reader := bytes.NewReader(data)
 	_, err := u.Upload(&s3manager.UploadInput{Bucket: &s.bucketName, Key: &s.key, Body: reader})
 	if err != nil {
-		return fmt.Errorf("upload object: %v", err)
+		return fmt.Errorf("upload object: %w", err)
 	}
 	return nil
 }

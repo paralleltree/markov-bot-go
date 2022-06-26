@@ -23,7 +23,7 @@ func (a *mecabAnalyzer) Analyze(text string) ([][]string, error) {
 
 	dicDir, err := resolveDicDir(a.dicType)
 	if err != nil {
-		return nil, fmt.Errorf("find dictionary dir: %v", err)
+		return nil, fmt.Errorf("find dictionary dir: %w", err)
 	}
 
 	cmd := exec.Command("mecab", "-d", dicDir, "-Owakati")

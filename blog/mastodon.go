@@ -69,7 +69,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
 	if err != nil {
-		return nil, "", fmt.Errorf("get statuses: %v", err)
+		return nil, "", fmt.Errorf("get statuses: %w", err)
 	}
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
@@ -83,7 +83,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 		Visibility string `json:"visibility"`
 	}{}
 	if err := json.Unmarshal(bytes, &statuses); err != nil {
-		return nil, "", fmt.Errorf("unmarshal response: %v(%s)", err, bytes)
+		return nil, "", fmt.Errorf("unmarshal response: %w(%s)", err, bytes)
 	}
 
 	tagPattern := regexp.MustCompile(`<[^>]*?>`)
@@ -106,7 +106,7 @@ func (c *MastodonClient) FetchUserId() (string, error) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("get account details: %v", err)
+		return "", fmt.Errorf("get account details: %w", err)
 	}
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
@@ -119,7 +119,7 @@ func (c *MastodonClient) FetchUserId() (string, error) {
 		UserName string `json:"username"`
 	}{}
 	if err := json.Unmarshal(bytes, account); err != nil {
-		return "", fmt.Errorf("unmarshal response: %v", err)
+		return "", fmt.Errorf("unmarshal response: %w", err)
 	}
 	return account.Id, nil
 }
@@ -139,7 +139,7 @@ func (c *MastodonClient) CreateStatus(payload string, visibility string) (string
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("post status: %v", err)
+		return "", fmt.Errorf("post status: %w", err)
 	}
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
@@ -151,7 +151,7 @@ func (c *MastodonClient) CreateStatus(payload string, visibility string) (string
 		Id string `json:"id"`
 	}{}
 	if err := json.Unmarshal(bytes, status); err != nil {
-		return "", fmt.Errorf("unmarshal response: %v", err)
+		return "", fmt.Errorf("unmarshal response: %w", err)
 	}
 	return status.Id, nil
 }

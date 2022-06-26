@@ -28,6 +28,7 @@ func (s *fileStore) Load() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	stream, err := ioutil.ReadAll(r)
 	if err != nil {

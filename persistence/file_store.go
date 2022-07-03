@@ -37,13 +37,16 @@ func (s *fileStore) Load() ([]byte, error) {
 	return stream, nil
 }
 
-func (s *fileStore) ModTime() (time.Time, error) {
+func (s *fileStore) ModTime() (time.Time, bool, error) {
 	stat, err := os.Stat(s.path)
 	if err != nil {
-		return time.Time{}, err
+		if os.IsNotExist(err) {
+			return time.Time{}, false, nil
+		}
+		return time.Time{}, true, err
 	}
 
-	return stat.ModTime(), nil
+	return stat.ModTime(), true, nil
 }
 
 func (s *fileStore) Save(data []byte) error {

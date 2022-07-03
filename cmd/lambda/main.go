@@ -52,8 +52,12 @@ func requestHandler(e PostEvent) error {
 	srcClient := blog.NewMastodonClient(conf.SourceDomain, conf.SourceAccessToken)
 	postClient := blog.NewMastodonClient(conf.PostDomain, conf.PostAccessToken)
 
-	mod, err := modelStore.ModTime()
-	if err != nil || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
+	mod, ok, err := modelStore.ModTime()
+	if err != nil {
+		return fmt.Errorf("get modtime: %w", err)
+	}
+
+	if !ok || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
 		if err := handler.BuildChain(srcClient, conf.FetchStatusCount, conf.StateSize, modelStore); err != nil {
 			return fmt.Errorf("build chain: %w", err)
 		}

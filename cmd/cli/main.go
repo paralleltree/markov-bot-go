@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -113,8 +114,11 @@ func main() {
 				Action: func(c *cli.Context) error {
 					srcClient := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey))
 					postClient := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey))
-					mod, err := store.ModTime()
-					if err != nil || float64(c.Int(ExpiresInKey)) < time.Since(mod).Seconds() {
+					mod, ok, err := store.ModTime()
+					if err != nil {
+						return fmt.Errorf("get modtime: %w", err)
+					}
+					if !ok || float64(c.Int(ExpiresInKey)) < time.Since(mod).Seconds() {
 						if err := handler.BuildChain(srcClient, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store); err != nil {
 							return err
 						}

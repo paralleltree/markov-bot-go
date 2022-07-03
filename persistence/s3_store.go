@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -43,13 +44,19 @@ func (s *s3Store) Load() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (s *s3Store) ModTime() (time.Time, error) {
+func (s *s3Store) ModTime() (time.Time, bool, error) {
 	client := s3.New(s.sess)
 	obj, err := client.GetObject(&s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
 	if err != nil {
-		return time.Time{}, fmt.Errorf("get object: %w", err)
+		if awsErr, ok := err.(awserr.Error); ok {
+			switch awsErr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				return time.Time{}, false, nil
+			}
+		}
+		return time.Time{}, true, fmt.Errorf("get object: %w", err)
 	}
-	return *obj.LastModified, nil
+	return *obj.LastModified, true, nil
 }
 
 func (s *s3Store) Save(data []byte) error {

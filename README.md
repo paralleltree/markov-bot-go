@@ -5,7 +5,7 @@ An application posting generated text from posts on Mastodon using the Markov ch
 ## Build and Run locally
 
     $ docker-compose build app
-    $ docker compose run --rm app /app/bot run
+    $ docker-compose run --rm app /app/bot run
 
 Run `docker-compose run --rm app /app/bot run --help` to view help.
 You can also pass the required arguments as environment variables.

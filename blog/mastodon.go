@@ -50,6 +50,9 @@ func (c *MastodonClient) FetchLatestPublicStatuses(userId string, count int) lib
 		}
 		maxId = nextMaxId
 		count -= len(statuses)
+		if nextMaxId == "" {
+			count = 0
+		}
 		return statuses, true, nil
 	}
 }
@@ -84,6 +87,10 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 	}{}
 	if err := json.Unmarshal(bytes, &statuses); err != nil {
 		return nil, "", fmt.Errorf("unmarshal response: %w(%s)", err, bytes)
+	}
+
+	if len(statuses) == 0 {
+		return nil, "", nil
 	}
 
 	tagPattern := regexp.MustCompile(`<[^>]*?>`)

@@ -21,6 +21,7 @@ Resources:
       PackageType: Image
       ImageConfig:
         EntryPoint: ["/app/lambda"]
+      MemorySize: 256
       Architectures:
         - x86_64
       Role: !GetAtt MarkovBotFunctionIamRole.Arn

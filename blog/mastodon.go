@@ -37,7 +37,7 @@ func NewMastodonClient(domain, accessToken string, postVisibility string) BlogCl
 	}
 }
 
-func (c *MastodonClient) GetPostsFetcher(count int) lib.IteratorFunc[string] {
+func (c *MastodonClient) GetPostsFetcher(count int) lib.ChunkIteratorFunc[string] {
 	userId := ""
 	maxId := ""
 	return func() ([]string, bool, error) {

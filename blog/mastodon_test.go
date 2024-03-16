@@ -305,7 +305,7 @@ func inflateVerifyCredentialsHandler(t *testing.T, mux *http.ServeMux, wantHost,
 	})
 }
 
-func consumeIterator(t *testing.T, iterator lib.IteratorFunc[string]) []string {
+func consumeIterator(t *testing.T, iterator lib.ChunkIteratorFunc[string]) []string {
 	t.Helper()
 	res := []string{}
 	for {

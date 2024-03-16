@@ -49,7 +49,7 @@ func requestHandler(e PostEvent) error {
 		return err
 	}
 
-	postVisibility := blog.StatusUnlisted
+	postVisibility := blog.MastodonStatusUnlisted
 	srcClient := blog.NewMastodonClient(conf.SourceDomain, conf.SourceAccessToken, "")
 	postClient := blog.NewMastodonClient(conf.PostDomain, conf.PostAccessToken, postVisibility)
 

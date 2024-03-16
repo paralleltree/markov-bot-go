@@ -15,10 +15,10 @@ import (
 type MastodonStatusVisibility string
 
 const (
-	StatusPublic   = "public"
-	StatusUnlisted = "unlisted"
-	StatusPrivate  = "private"
-	StatusDirect   = "direct"
+	MastodonStatusPublic   = "public"
+	MastodonStatusUnlisted = "unlisted"
+	MastodonStatusPrivate  = "private"
+	MastodonStatusDirect   = "direct"
 )
 
 type MastodonClient struct {
@@ -32,7 +32,7 @@ func NewMastodonClient(domain, accessToken string, postVisibility string) BlogCl
 	return &MastodonClient{
 		Domain:         domain,
 		AccessToken:    accessToken,
-		PostVisibility: StatusUnlisted,
+		PostVisibility: MastodonStatusUnlisted,
 		client:         &http.Client{},
 	}
 }
@@ -98,7 +98,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 	tagPattern := regexp.MustCompile(`<[^>]*?>`)
 	result := make([]string, 0, len(statuses))
 	for _, v := range statuses {
-		if v.Visibility == StatusPrivate || v.Visibility == StatusDirect {
+		if v.Visibility == MastodonStatusPrivate || v.Visibility == MastodonStatusDirect {
 			continue
 		}
 		// remove tags

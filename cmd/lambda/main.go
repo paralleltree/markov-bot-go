@@ -49,8 +49,9 @@ func requestHandler(e PostEvent) error {
 		return err
 	}
 
-	srcClient := blog.NewMastodonClient(conf.SourceDomain, conf.SourceAccessToken)
-	postClient := blog.NewMastodonClient(conf.PostDomain, conf.PostAccessToken)
+	postVisibility := blog.StatusUnlisted
+	srcClient := blog.NewMastodonClient(conf.SourceDomain, conf.SourceAccessToken, "")
+	postClient := blog.NewMastodonClient(conf.PostDomain, conf.PostAccessToken, postVisibility)
 
 	mod, ok, err := modelStore.ModTime()
 	if err != nil {

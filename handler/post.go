@@ -9,7 +9,7 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func GenerateAndPost(client *blog.MastodonClient, store persistence.PersistentStore, minWordsCount int, dryRun bool) error {
+func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, minWordsCount int, dryRun bool) error {
 	model, err := loadModel(store)
 	if err != nil {
 		return fmt.Errorf("load model: %w", err)
@@ -25,7 +25,7 @@ func GenerateAndPost(client *blog.MastodonClient, store persistence.PersistentSt
 		if dryRun {
 			fmt.Println(text)
 		} else {
-			if _, err := client.CreateStatus(text, blog.StatusUnlisted); err != nil {
+			if err := client.CreatePost(text); err != nil {
 				return fmt.Errorf("create status: %w", err)
 			}
 		}

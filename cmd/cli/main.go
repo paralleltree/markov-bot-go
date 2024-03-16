@@ -18,6 +18,7 @@ const (
 	SourceAccessTokenKey = "source-access-token"
 	PostDomainKey        = "post-domain"
 	PostAccessTokenKey   = "post-access-token"
+	PostVisibility       = "post-visibility"
 	StateSizeKey         = "state-size"
 	FetchStatusCountKey  = "fetch-status-count"
 	MinWordsCount        = "min-words-count"
@@ -68,6 +69,12 @@ func main() {
 			Usage:   "mastodon access token of posting account",
 			EnvVars: []string{"POST_ACCESS_TOKEN"},
 		},
+		&cli.StringFlag{
+			Name:    PostVisibility,
+			Usage:   "specifies the visibility of post.",
+			EnvVars: []string{"POST_VISIBILITY"},
+			Value:   "unlisted",
+		},
 		&cli.BoolFlag{
 			Name:    DryRunKey,
 			Usage:   "switches the output of generated text",
@@ -94,7 +101,7 @@ func main() {
 				Usage: "Builds chain model and save it",
 				Flags: buildingFlags,
 				Action: func(c *cli.Context) error {
-					client := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey))
+					client := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey), "")
 					return handler.BuildChain(client, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store)
 				},
 			},
@@ -103,7 +110,7 @@ func main() {
 				Usage: "Posts new text from built chain",
 				Flags: postingFlags,
 				Action: func(c *cli.Context) error {
-					client := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey))
+					client := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey), c.String(PostVisibility))
 					return handler.GenerateAndPost(client, store, c.Int(MinWordsCount), c.Bool(DryRunKey))
 				},
 			},
@@ -112,8 +119,8 @@ func main() {
 				Usage: "Posts new text after building chain if it expired",
 				Flags: append(append([]cli.Flag{}, buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
-					srcClient := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey))
-					postClient := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey))
+					srcClient := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey), "")
+					postClient := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey), c.String(PostVisibility))
 					mod, ok, err := store.ModTime()
 					if err != nil {
 						return fmt.Errorf("get modtime: %w", err)

@@ -31,6 +31,7 @@ func TestMastodonClient_CreateStatus(t *testing.T) {
 	wantAuthorizationHeader := fmt.Sprintf("Bearer %s", wantAccessToken)
 
 	mux.HandleFunc("/api/v1/statuses", func(w http.ResponseWriter, r *http.Request) {
+		// check headers
 		gotContentType := r.Header.Get("Content-Type")
 		if wantContentType != gotContentType {
 			t.Fatalf("unexpected Content-Type: expected %v, but got %v", wantContentType, gotContentType)
@@ -38,6 +39,17 @@ func TestMastodonClient_CreateStatus(t *testing.T) {
 		gotAuthorizationHeader := r.Header.Get("Authorization")
 		if wantAuthorizationHeader != gotAuthorizationHeader {
 			t.Fatalf("unexpected Authorization: expected %v, but got %v", wantAuthorizationHeader, gotAuthorizationHeader)
+		}
+
+		// check form values
+		gotVisibility := r.FormValue("visibility")
+		if wantVisibility != gotVisibility {
+			t.Fatalf("unexpected visibility: want %s, but got %s", wantVisibility, gotVisibility)
+		}
+
+		gotBody := r.FormValue("status")
+		if wantBody != gotBody {
+			t.Fatalf("unexpected body: want %s, but got %s", wantBody, gotBody)
 		}
 
 		w.WriteHeader(http.StatusOK)
@@ -53,13 +65,10 @@ func TestMastodonClient_CreateStatus(t *testing.T) {
 		w.Write(body)
 	})
 
-	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, httpClient)
-	gotId, err := client.CreateStatus(wantBody, wantVisibility)
+	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, wantVisibility, httpClient)
+	err := client.CreatePost(wantBody)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
-	}
-	if wantId != gotId {
-		t.Fatalf("unexpected id: expected %v, but got %v", wantId, gotId)
 	}
 }
 
@@ -71,6 +80,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsSpecifiedCount(t *test
 	wantAccountId := "100"
 	wantAccessToken := "token"
 	oldestStatusId := "1"
+	wantAuthorizationHeader := fmt.Sprintf("Bearer %s", wantAccessToken)
 
 	directStatus := mastodonStatus{
 		Id:         "4",
@@ -121,8 +131,10 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsSpecifiedCount(t *test
 		w.Write(body)
 	})
 
-	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, httpClient)
-	iterator := client.FetchLatestPublicStatuses(wantAccountId, 20)
+	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
+
+	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
+	iterator := client.GetPostsFetcher(20)
 	gotStatuses := consumeIterator(t, iterator)
 
 	if len(wantStatuses) != len(gotStatuses) {
@@ -144,6 +156,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 	wantHost := "foo.jp"
 	wantAccountId := "100"
 	wantAccessToken := "token"
+	wantAuthorizationHeader := fmt.Sprintf("Bearer %s", wantAccessToken)
 
 	statusesCount := 120
 	allStatuses := []mastodonStatus{}
@@ -195,8 +208,10 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 		w.Write(body)
 	})
 
-	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, httpClient)
-	iterator := client.FetchLatestPublicStatuses(wantAccountId, statusesCount)
+	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
+
+	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
+	iterator := client.GetPostsFetcher(statusesCount)
 	gotStatuses := consumeIterator(t, iterator)
 
 	if len(allStatuses) != len(gotStatuses) {
@@ -227,6 +242,11 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsWithRequiredParameters
 		if wantHost != gotHost {
 			t.Fatalf("unexpected host: expected %v, but got %v", wantHost, gotHost)
 		}
+		gotAuthorizationHeader := r.Header.Get("Authorization")
+		if wantAuthorizationHeader != gotAuthorizationHeader {
+			t.Fatalf("unexpected authorziation header: expected %v, but got %v", wantAuthorizationHeader, gotAuthorizationHeader)
+		}
+
 		gotExcludeReblogs := r.URL.Query().Get("exclude_reblogs")
 		if wantExcludeReblogs != gotExcludeReblogs {
 			t.Fatalf("unexpected exclude_reblogs: expected %v, but got %v", wantExcludeReblogs, gotExcludeReblogs)
@@ -236,17 +256,15 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsWithRequiredParameters
 			t.Fatalf("unexpected exclude_replies: expected %v, but got %v", wantExcludeReplies, gotExcludeReplies)
 		}
 
-		gotAuthorizationHeader := r.Header.Get("Authorization")
-		if wantAuthorizationHeader != gotAuthorizationHeader {
-			t.Fatalf("unexpected authorziation header: expected %v, but got %v", wantAuthorizationHeader, gotAuthorizationHeader)
-		}
-
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("[]")) // empty response
 	})
 
-	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, httpClient)
-	client.FetchLatestPublicStatuses(wantAccountId, 20)
+	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
+
+	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
+	iter := client.GetPostsFetcher(20)
+	consumeIterator(t, iter)
 }
 
 func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
@@ -258,6 +276,19 @@ func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
 	wantId := "123"
 	wantAuthorizationHeader := fmt.Sprintf("Bearer %s", wantAccessToken)
 
+	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantId)
+
+	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
+	gotId, err := client.FetchUserId()
+	if err != nil {
+		t.Fatalf("unexpected error while fetching user id: %v", err)
+	}
+	if wantId != gotId {
+		t.Fatalf("unexpected id: expected %v, but got %v", wantId, gotId)
+	}
+}
+
+func inflateVerifyCredentialsHandler(t *testing.T, mux *http.ServeMux, wantHost, wantAuthorizationHeader, wantId string) {
 	mux.HandleFunc("/api/v1/accounts/verify_credentials", func(w http.ResponseWriter, r *http.Request) {
 		gotHost := r.URL.Host
 		if wantHost != gotHost {
@@ -272,15 +303,6 @@ func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf(`{"id": "%s", "username": "test"}`, wantId))) // empty response
 	})
-
-	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, httpClient)
-	gotId, err := client.FetchUserId()
-	if err != nil {
-		t.Fatalf("unexpected error while fetching user id: %v", err)
-	}
-	if wantId != gotId {
-		t.Fatalf("unexpected id: expected %v, but got %v", wantId, gotId)
-	}
 }
 
 func consumeIterator(t *testing.T, iterator lib.IteratorFunc[string]) []string {

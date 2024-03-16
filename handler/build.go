@@ -9,16 +9,11 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func BuildChain(client *blog.MastodonClient, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
+func BuildChain(client blog.BlogClient, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
-	uid, err := client.FetchUserId()
-	if err != nil {
-		return fmt.Errorf("fetch user id: %w", err)
-	}
-
 	chain := markov.NewChain(stateSize)
-	iterator := client.FetchLatestPublicStatuses(uid, fetchStatusCount)
+	iterator := client.GetPostsFetcher(fetchStatusCount)
 
 	for {
 		statuses, hasNext, err := iterator()

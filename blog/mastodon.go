@@ -12,6 +12,8 @@ import (
 	"github.com/paralleltree/markov-bot-go/lib"
 )
 
+type MastodonStatusVisibility string
+
 const (
 	StatusPublic   = "public"
 	StatusUnlisted = "unlisted"
@@ -20,24 +22,34 @@ const (
 )
 
 type MastodonClient struct {
-	Domain      string
-	AccessToken string
-	client      *http.Client
+	Domain         string
+	AccessToken    string
+	PostVisibility string
+	client         *http.Client
 }
 
-func NewMastodonClient(domain, accessToken string) *MastodonClient {
+func NewMastodonClient(domain, accessToken string, postVisibility string) BlogClient {
 	return &MastodonClient{
-		Domain:      domain,
-		AccessToken: accessToken,
-		client:      &http.Client{},
+		Domain:         domain,
+		AccessToken:    accessToken,
+		PostVisibility: StatusUnlisted,
+		client:         &http.Client{},
 	}
 }
 
-func (c *MastodonClient) FetchLatestPublicStatuses(userId string, count int) lib.IteratorFunc[string] {
+func (c *MastodonClient) GetPostsFetcher(count int) lib.IteratorFunc[string] {
+	userId := ""
 	maxId := ""
 	return func() ([]string, bool, error) {
 		if count == 0 {
 			return nil, false, nil
+		}
+		if userId == "" {
+			gotUserId, err := c.FetchUserId()
+			if err != nil {
+				return nil, false, fmt.Errorf("fetch user id: %w", err)
+			}
+			userId = gotUserId
 		}
 
 		chunkSize := 100
@@ -132,35 +144,35 @@ func (c *MastodonClient) FetchUserId() (string, error) {
 }
 
 // Posts toot and returns created status id.
-func (c *MastodonClient) CreateStatus(payload string, visibility string) (string, error) {
+func (c *MastodonClient) CreatePost(payload string) error {
 	form := url.Values{}
 	form.Add("status", payload)
-	form.Add("visibility", visibility)
+	form.Add("visibility", c.PostVisibility)
 	body := strings.NewReader(form.Encode())
 
 	req, err := http.NewRequest("POST", c.buildUrl("/api/v1/statuses"), body)
 	if err != nil {
-		return "", err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("post status: %w", err)
+		return fmt.Errorf("post status: %w", err)
 	}
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	status := &struct {
 		Id string `json:"id"`
 	}{}
 	if err := json.Unmarshal(bytes, status); err != nil {
-		return "", fmt.Errorf("unmarshal response: %w", err)
+		return fmt.Errorf("unmarshal response: %w", err)
 	}
-	return status.Id, nil
+	return nil
 }
 
 func (c *MastodonClient) buildUrl(path string) string {

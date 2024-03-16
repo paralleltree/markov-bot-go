@@ -37,13 +37,10 @@ func NewMastodonClient(domain, accessToken string, postVisibility string) BlogCl
 	}
 }
 
-func (c *MastodonClient) GetPostsFetcher(count int) lib.ChunkIteratorFunc[string] {
+func (c *MastodonClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
 	userId := ""
 	maxId := ""
 	return func() ([]string, bool, error) {
-		if count == 0 {
-			return nil, false, nil
-		}
 		if userId == "" {
 			gotUserId, err := c.FetchUserId()
 			if err != nil {
@@ -53,25 +50,18 @@ func (c *MastodonClient) GetPostsFetcher(count int) lib.ChunkIteratorFunc[string
 		}
 
 		chunkSize := 100
-		if count < chunkSize {
-			chunkSize = count
-		}
-		statuses, nextMaxId, err := c.fetchPublicStatusesChunk(userId, chunkSize, maxId)
+		statuses, hasNext, nextMaxId, err := c.fetchPublicStatusesChunk(userId, chunkSize, maxId)
 		if err != nil {
 			return nil, false, err
 		}
 		maxId = nextMaxId
-		count -= len(statuses)
-		if nextMaxId == "" {
-			count = 0
-		}
-		return statuses, true, nil
+		return statuses, hasNext, nil
 	}
 }
 
 // Returns status slice and minimum status id to fetch next older statuses.
 // This function may returns statuses lesser than specified count because this exlcludes private and direct visibility statuses.
-func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxId string) ([]string, string, error) {
+func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxId string) ([]string, bool, string, error) {
 	url := c.buildUrl(fmt.Sprintf("/api/v1/accounts/%s/statuses?limit=%d&exclude_reblogs=1&exclude_replies=1", userId, count))
 	if maxId != "" {
 		url = fmt.Sprintf("%s&max_id=%s", url, maxId)
@@ -79,17 +69,17 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, "", err
+		return nil, false, "", err
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
 	if err != nil {
-		return nil, "", fmt.Errorf("get statuses: %w", err)
+		return nil, false, "", fmt.Errorf("get statuses: %w", err)
 	}
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, "", err
+		return nil, false, "", err
 	}
 
 	statuses := []struct {
@@ -98,11 +88,11 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 		Visibility string `json:"visibility"`
 	}{}
 	if err := json.Unmarshal(bytes, &statuses); err != nil {
-		return nil, "", fmt.Errorf("unmarshal response: %w(%s)", err, bytes)
+		return nil, false, "", fmt.Errorf("unmarshal response: %w(%s)", err, bytes)
 	}
 
 	if len(statuses) == 0 {
-		return nil, "", nil
+		return nil, false, "", nil
 	}
 
 	tagPattern := regexp.MustCompile(`<[^>]*?>`)
@@ -114,7 +104,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 		// remove tags
 		result = append(result, tagPattern.ReplaceAllLiteralString(v.Content, ""))
 	}
-	return result, statuses[len(statuses)-1].Id, nil
+	return result, true, statuses[len(statuses)-1].Id, nil
 }
 
 func (c *MastodonClient) FetchUserId() (string, error) {

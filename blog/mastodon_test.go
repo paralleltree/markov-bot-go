@@ -134,8 +134,8 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsSpecifiedCount(t *test
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iterator := client.GetPostsFetcher(20)
-	gotStatuses := consumeIterator(t, iterator)
+	iterator := client.GetPostsFetcher()
+	gotStatuses := consumeIterator(t, iterator, len(wantStatuses))
 
 	if len(wantStatuses) != len(gotStatuses) {
 		t.Fatalf("unexpected result: expected %v items, but got %v items", len(wantStatuses), len(gotStatuses))
@@ -183,7 +183,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 		// second(last) page
 		allStatuses[99].Id: {
 			statuses:  allStatuses[100:],
-			wantLimit: 20,
+			wantLimit: 100,
 		},
 	}
 
@@ -211,8 +211,8 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iterator := client.GetPostsFetcher(statusesCount)
-	gotStatuses := consumeIterator(t, iterator)
+	iterator := client.GetPostsFetcher()
+	gotStatuses := consumeIterator(t, iterator, statusesCount)
 
 	if len(allStatuses) != len(gotStatuses) {
 		t.Fatalf("unexpected result: expected %v items, but got %v items", len(allStatuses), len(gotStatuses))
@@ -263,8 +263,8 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsWithRequiredParameters
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iter := client.GetPostsFetcher(20)
-	consumeIterator(t, iter)
+	iter := client.GetPostsFetcher()
+	consumeIterator(t, iter, 1)
 }
 
 func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
@@ -305,18 +305,22 @@ func inflateVerifyCredentialsHandler(t *testing.T, mux *http.ServeMux, wantHost,
 	})
 }
 
-func consumeIterator(t *testing.T, iterator lib.ChunkIteratorFunc[string]) []string {
+func consumeIterator[T any](t *testing.T, chunkIterator lib.ChunkIteratorFunc[T], count int) []T {
 	t.Helper()
-	res := []string{}
+	iterator := lib.BuildIterator[T](chunkIterator)
+	res := []T{}
 	for {
-		statuses, ok, err := iterator()
+		if count <= len(res) {
+			break
+		}
+		item, ok, err := iterator()
 		if err != nil {
 			t.Fatalf("iterate result: %v", err)
 		}
 		if !ok {
 			break
 		}
-		res = append(res, statuses...)
+		res = append(res, item)
 	}
 	return res
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/paralleltree/markov-bot-go/blog"
+	"github.com/paralleltree/markov-bot-go/lib"
 	"github.com/paralleltree/markov-bot-go/markov"
 	"github.com/paralleltree/markov-bot-go/morpheme"
 	"github.com/paralleltree/markov-bot-go/persistence"
@@ -13,10 +14,10 @@ func BuildChain(client blog.BlogClient, fetchStatusCount int, stateSize int, sto
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
 	chain := markov.NewChain(stateSize)
-	iterator := client.GetPostsFetcher(fetchStatusCount)
+	iterator := lib.BuildIterator(client.GetPostsFetcher())
 
-	for {
-		statuses, hasNext, err := iterator()
+	for i := 0; i < fetchStatusCount; i++ {
+		status, hasNext, err := iterator()
 		if err != nil {
 			return fmt.Errorf("fetch statuses: %w", err)
 		}
@@ -24,14 +25,12 @@ func BuildChain(client blog.BlogClient, fetchStatusCount int, stateSize int, sto
 			break
 		}
 
-		for _, s := range statuses {
-			result, err := analyzer.Analyze(s)
-			if err != nil {
-				return fmt.Errorf("analyze text: %w", err)
-			}
-			for _, v := range result {
-				chain.AddSource(v)
-			}
+		result, err := analyzer.Analyze(status)
+		if err != nil {
+			return fmt.Errorf("analyze text: %w", err)
+		}
+		for _, v := range result {
+			chain.AddSource(v)
 		}
 	}
 

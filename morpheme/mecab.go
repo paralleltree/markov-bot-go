@@ -12,7 +12,7 @@ type mecabAnalyzer struct {
 	dicType string
 }
 
-func NewMecabAnalyzer(dicType string) MorphemeAnalyzer {
+func NewMecabAnalyzer(dicType string) *mecabAnalyzer {
 	return &mecabAnalyzer{
 		dicType: dicType,
 	}

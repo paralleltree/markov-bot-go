@@ -10,9 +10,7 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func BuildChain(client blog.BlogClient, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
-	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
-
+func BuildChain(client blog.BlogClient, analyzer morpheme.MorphemeAnalyzer, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
 	chain := markov.NewChain(stateSize)
 	iterator := lib.BuildIterator(client.GetPostsFetcher())
 

@@ -10,6 +10,7 @@ import (
 
 	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
+	"github.com/paralleltree/markov-bot-go/morpheme"
 	"github.com/paralleltree/markov-bot-go/persistence"
 	"github.com/urfave/cli/v2"
 )
@@ -76,6 +77,8 @@ func main() {
 		modelFileFlag,
 	}
 
+	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
+
 	app := cli.App{
 		Commands: []*cli.Command{
 			{
@@ -89,7 +92,7 @@ func main() {
 						return fmt.Errorf("load config: %w", err)
 					}
 					overrideChainConfigFromCli(&conf.ChainConfig, c)
-					return handler.BuildChain(conf.FetchClient, conf.FetchStatusCount, conf.StateSize, store)
+					return handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
 				},
 			},
 			{
@@ -122,7 +125,7 @@ func main() {
 						return fmt.Errorf("get modtime: %w", err)
 					}
 					if !ok || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
-						if err := handler.BuildChain(conf.FetchClient, conf.FetchStatusCount, conf.StateSize, store); err != nil {
+						if err := handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store); err != nil {
 							return err
 						}
 					}

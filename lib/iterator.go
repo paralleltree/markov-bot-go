@@ -6,6 +6,7 @@ package lib
 type IteratorFunc[T any] func() (T, bool, error)
 
 // Type ChunkIteratorFunc[T any] is a function type that returns a chunk of items, a boolean indicating whether there are more items, and an error.
+// Caller should call this function repeatedly while the second returned value is true.
 type ChunkIteratorFunc[T any] func() ([]T, bool, error)
 
 func BuildIterator[T any](chunkIterator ChunkIteratorFunc[T]) IteratorFunc[T] {

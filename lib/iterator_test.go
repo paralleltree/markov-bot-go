@@ -66,6 +66,24 @@ func TestBuildIterator_IteratesOverMultipleChunks(t *testing.T) {
 			wantItemsCount: 20,
 			buildChunkFunc: breakAtTheLastChunkFunc,
 		},
+		{
+			name:           "when chunkFunc returns empty result first but hasNext is true, iterator should make next call to chunkFunc",
+			wantItemsCount: 1,
+			buildChunkFunc: func(i int) func() ([]int, bool, error) {
+				invokeCount := 0
+				return func() ([]int, bool, error) {
+					defer func() { invokeCount++ }()
+					switch invokeCount {
+					case 0:
+						return nil, true, nil
+					case 1:
+						return []int{0}, false, nil
+					default:
+						panic("unexpected invoke!")
+					}
+				}
+			},
+		},
 	}
 
 	for _, tt := range cases {

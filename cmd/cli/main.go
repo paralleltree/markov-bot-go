@@ -2,28 +2,25 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"os"
 	"time"
 
-	"github.com/paralleltree/markov-bot-go/blog"
+	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/persistence"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	SourceDomainKey      = "source-domain"
-	SourceAccessTokenKey = "source-access-token"
-	PostDomainKey        = "post-domain"
-	PostAccessTokenKey   = "post-access-token"
-	PostVisibility       = "post-visibility"
-	StateSizeKey         = "state-size"
-	FetchStatusCountKey  = "fetch-status-count"
-	MinWordsCount        = "min-words-count"
-	ExpiresInKey         = "expires-in"
-	DryRunKey            = "dry-run"
+	ConfigFileKey       = "config-file"
+	StateSizeKey        = "state-size"
+	FetchStatusCountKey = "fetch-status-count"
+	MinWordsCount       = "min-words-count"
+	ExpiresInKey        = "expires-in"
+	DryRunKey           = "dry-run"
 )
 
 func main() {
@@ -31,19 +28,12 @@ func main() {
 
 	store := persistence.NewFileStore(".cache/model")
 
+	configFileFlag := &cli.StringFlag{
+		Name:  ConfigFileKey,
+		Usage: "Load configuration from `FILE`. If command-line arguments or environment variables are set, they override the configuration file.",
+	}
+
 	buildingFlags := []cli.Flag{
-		&cli.StringFlag{
-			Name:     SourceDomainKey,
-			Usage:    "mastodon domain of source account",
-			Required: true,
-			EnvVars:  []string{"SOURCE_DOMAIN"},
-		},
-		&cli.StringFlag{
-			Name:     SourceAccessTokenKey,
-			Usage:    "mastodon access token of source account",
-			Required: true,
-			EnvVars:  []string{"SOURCE_ACCESS_TOKEN"},
-		},
 		&cli.IntFlag{
 			Name:    StateSizeKey,
 			Usage:   "The state size of markov chain",
@@ -56,25 +46,10 @@ func main() {
 			Value:   300,
 			EnvVars: []string{"FETCH_STATUS_COUNT"},
 		},
+		configFileFlag,
 	}
 
 	postingFlags := []cli.Flag{
-		&cli.StringFlag{
-			Name:    PostDomainKey,
-			Usage:   "mastodon domain of posting account",
-			EnvVars: []string{"POST_DOMAIN"},
-		},
-		&cli.StringFlag{
-			Name:    PostAccessTokenKey,
-			Usage:   "mastodon access token of posting account",
-			EnvVars: []string{"POST_ACCESS_TOKEN"},
-		},
-		&cli.StringFlag{
-			Name:    PostVisibility,
-			Usage:   "specifies the visibility of post.",
-			EnvVars: []string{"POST_VISIBILITY"},
-			Value:   "unlisted",
-		},
 		&cli.BoolFlag{
 			Name:    DryRunKey,
 			Usage:   "switches the output of generated text",
@@ -92,6 +67,7 @@ func main() {
 			EnvVars: []string{"EXPIRES_IN"},
 			Value:   60 * 60 * 24,
 		},
+		configFileFlag,
 	}
 
 	app := cli.App{
@@ -101,8 +77,12 @@ func main() {
 				Usage: "Builds chain model and save it",
 				Flags: buildingFlags,
 				Action: func(c *cli.Context) error {
-					client := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey), "")
-					return handler.BuildChain(client, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store)
+					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
+					if err != nil {
+						return fmt.Errorf("load config: %w", err)
+					}
+					overrideChainConfigFromCli(&conf.ChainConfig, c)
+					return handler.BuildChain(conf.FetchClient, conf.FetchStatusCount, conf.StateSize, store)
 				},
 			},
 			{
@@ -110,8 +90,12 @@ func main() {
 				Usage: "Posts new text from built chain",
 				Flags: postingFlags,
 				Action: func(c *cli.Context) error {
-					client := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey), c.String(PostVisibility))
-					return handler.GenerateAndPost(client, store, c.Int(MinWordsCount), c.Bool(DryRunKey))
+					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
+					if err != nil {
+						return fmt.Errorf("load config: %w", err)
+					}
+					overrideChainConfigFromCli(&conf.ChainConfig, c)
+					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount, c.Bool(DryRunKey))
 				},
 			},
 			{
@@ -119,18 +103,21 @@ func main() {
 				Usage: "Posts new text after building chain if it expired",
 				Flags: append(append([]cli.Flag{}, buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
-					srcClient := blog.NewMastodonClient(c.String(SourceDomainKey), c.String(SourceAccessTokenKey), "")
-					postClient := blog.NewMastodonClient(c.String(PostDomainKey), c.String(PostAccessTokenKey), c.String(PostVisibility))
+					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
+					if err != nil {
+						return fmt.Errorf("load config: %w", err)
+					}
+					overrideChainConfigFromCli(&conf.ChainConfig, c)
 					mod, ok, err := store.ModTime()
 					if err != nil {
 						return fmt.Errorf("get modtime: %w", err)
 					}
-					if !ok || float64(c.Int(ExpiresInKey)) < time.Since(mod).Seconds() {
-						if err := handler.BuildChain(srcClient, c.Int(FetchStatusCountKey), c.Int(StateSizeKey), store); err != nil {
+					if !ok || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
+						if err := handler.BuildChain(conf.FetchClient, conf.FetchStatusCount, conf.StateSize, store); err != nil {
 							return err
 						}
 					}
-					return handler.GenerateAndPost(postClient, store, c.Int(MinWordsCount), c.Bool(DryRunKey))
+					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount, c.Bool(DryRunKey))
 				},
 			},
 		},
@@ -140,4 +127,33 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func overrideChainConfigFromCli(conf *config.ChainConfig, c *cli.Context) {
+	if c.IsSet(StateSizeKey) {
+		conf.StateSize = c.Int(StateSizeKey)
+	}
+	if c.IsSet(FetchStatusCountKey) {
+		conf.FetchStatusCount = c.Int(FetchStatusCountKey)
+	}
+	if c.IsSet(ExpiresInKey) {
+		conf.ExpiresIn = c.Int(ExpiresInKey)
+	}
+	if c.IsSet(MinWordsCount) {
+		conf.MinWordsCount = c.Int(MinWordsCount)
+	}
+}
+
+func LoadBotConfigFromFile(path string) (*config.BotConfig, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("open config file: %w", err)
+	}
+	defer f.Close()
+
+	confBody, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("read config file: %w", err)
+	}
+	return config.LoadBotConfig(confBody)
 }

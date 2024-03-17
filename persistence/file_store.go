@@ -1,8 +1,7 @@
 package persistence
 
 import (
-	"compress/gzip"
-	"io/ioutil"
+	"io"
 	"os"
 	"time"
 )
@@ -24,13 +23,7 @@ func (s *fileStore) Load() ([]byte, error) {
 	}
 	defer f.Close()
 
-	r, err := gzip.NewReader(f)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-
-	stream, err := ioutil.ReadAll(r)
+	stream, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +49,7 @@ func (s *fileStore) Save(data []byte) error {
 	}
 	defer f.Close()
 
-	w := gzip.NewWriter(f)
-	defer w.Close()
-	if _, err := w.Write(data); err != nil {
+	if _, err := f.Write(data); err != nil {
 		return err
 	}
 	return nil

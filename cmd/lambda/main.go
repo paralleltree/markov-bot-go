@@ -33,10 +33,11 @@ func requestHandler(e PostEvent) error {
 		return err
 	}
 
-	modelStore, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/model", e.S3KeyPrefix))
+	s3Store, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/model", e.S3KeyPrefix))
 	if err != nil {
 		return err
 	}
+	modelStore := persistence.NewCompressedStore(s3Store)
 
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 

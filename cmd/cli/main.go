@@ -86,7 +86,7 @@ func main() {
 				Usage: "Builds chain model and save it",
 				Flags: buildingFlags,
 				Action: func(c *cli.Context) error {
-					store := persistence.NewFileStore(c.String(ModelFileKey))
+					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)
@@ -100,7 +100,7 @@ func main() {
 				Usage: "Posts new text from built chain",
 				Flags: postingFlags,
 				Action: func(c *cli.Context) error {
-					store := persistence.NewFileStore(c.String(ModelFileKey))
+					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)
@@ -114,7 +114,7 @@ func main() {
 				Usage: "Posts new text after building chain if it expired",
 				Flags: append(append([]cli.Flag{}, buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
-					store := persistence.NewFileStore(c.String(ModelFileKey))
+					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)

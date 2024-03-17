@@ -5,11 +5,7 @@ services:
     volumes:
       - './.cache:/app/.cache'
     environment:
-      - SOURCE_DOMAIN
-      - SOURCE_ACCESS_TOKEN
       - FETCH_STATUS_COUNT
       - STATE_SIZE
-      - POST_DOMAIN
-      - POST_ACCESS_TOKEN
       - MIN_WORDS_COUNT
       - DRY_RUN

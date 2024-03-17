@@ -14,12 +14,14 @@ type BotConfig struct {
 	ChainConfig
 }
 
+type ConfigFile struct {
+	Input  map[string]interface{} `yaml:"input"`
+	Output map[string]interface{} `yaml:"output"`
+	ChainConfig
+}
+
 func LoadBotConfig(body []byte) (*BotConfig, error) {
-	conf := struct {
-		Input  map[string]interface{} `yaml:"input"`
-		Output map[string]interface{} `yaml:"output"`
-		ChainConfig
-	}{
+	conf := ConfigFile{
 		ChainConfig: DefaultChainConfig(),
 	}
 	if err := yaml.Unmarshal(body, &conf); err != nil {

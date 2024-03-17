@@ -16,6 +16,7 @@ import (
 
 const (
 	ConfigFileKey       = "config-file"
+	ModelFileKey        = "model-file"
 	StateSizeKey        = "state-size"
 	FetchStatusCountKey = "fetch-status-count"
 	MinWordsCount       = "min-words-count"
@@ -26,11 +27,14 @@ const (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	store := persistence.NewFileStore(".cache/model")
-
 	configFileFlag := &cli.StringFlag{
 		Name:  ConfigFileKey,
 		Usage: "Load configuration from `FILE`. If command-line arguments or environment variables are set, they override the configuration file.",
+	}
+	modelFileFlag := &cli.StringFlag{
+		Name:     ModelFileKey,
+		Usage:    "Load model from `FILE`.",
+		Required: true,
 	}
 
 	buildingFlags := []cli.Flag{
@@ -47,6 +51,7 @@ func main() {
 			EnvVars: []string{"FETCH_STATUS_COUNT"},
 		},
 		configFileFlag,
+		modelFileFlag,
 	}
 
 	postingFlags := []cli.Flag{
@@ -68,6 +73,7 @@ func main() {
 			Value:   60 * 60 * 24,
 		},
 		configFileFlag,
+		modelFileFlag,
 	}
 
 	app := cli.App{
@@ -77,6 +83,7 @@ func main() {
 				Usage: "Builds chain model and save it",
 				Flags: buildingFlags,
 				Action: func(c *cli.Context) error {
+					store := persistence.NewFileStore(c.String(ModelFileKey))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)
@@ -90,6 +97,7 @@ func main() {
 				Usage: "Posts new text from built chain",
 				Flags: postingFlags,
 				Action: func(c *cli.Context) error {
+					store := persistence.NewFileStore(c.String(ModelFileKey))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)
@@ -103,6 +111,7 @@ func main() {
 				Usage: "Posts new text after building chain if it expired",
 				Flags: append(append([]cli.Flag{}, buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
+					store := persistence.NewFileStore(c.String(ModelFileKey))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
 					if err != nil {
 						return fmt.Errorf("load config: %w", err)

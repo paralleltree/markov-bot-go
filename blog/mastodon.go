@@ -22,15 +22,15 @@ const (
 )
 
 type MastodonClient struct {
-	Domain         string
+	Origin         string
 	AccessToken    string
 	PostVisibility string
 	client         *http.Client
 }
 
-func NewMastodonClient(domain, accessToken string, postVisibility string) BlogClient {
+func NewMastodonClient(origin, accessToken string, postVisibility string) BlogClient {
 	return &MastodonClient{
-		Domain:         domain,
+		Origin:         origin,
 		AccessToken:    accessToken,
 		PostVisibility: MastodonStatusUnlisted,
 		client:         &http.Client{},
@@ -166,5 +166,5 @@ func (c *MastodonClient) CreatePost(payload string) error {
 }
 
 func (c *MastodonClient) buildUrl(path string) string {
-	return fmt.Sprintf("https://%s%s", c.Domain, path)
+	return fmt.Sprintf("%s%s", c.Origin, path)
 }

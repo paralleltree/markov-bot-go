@@ -1,10 +1,13 @@
 package blog
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 func NewMastodonClientWithHttpClient(domain, accessToken string, postVisibility string, client *http.Client) *MastodonClient {
 	return &MastodonClient{
-		Domain:         domain,
+		Origin:         fmt.Sprintf("https://%s", domain),
 		AccessToken:    accessToken,
 		PostVisibility: postVisibility,
 		client:         client,

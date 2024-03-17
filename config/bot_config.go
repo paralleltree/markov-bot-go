@@ -50,10 +50,10 @@ func resolveBlogClient(conf map[string]interface{}) (blog.BlogClient, error) {
 
 	switch strings.ToLower(platform) {
 	case "mastodon":
-		domain := resolveMapValue[string](conf, "domain")
+		origin := resolveMapValue[string](conf, "origin")
 		accessToken := resolveMapValue[string](conf, "access_token")
 		PostVisibility := resolveMapValue[string](conf, "post_visibility")
-		return blog.NewMastodonClient(domain, accessToken, PostVisibility), nil
+		return blog.NewMastodonClient(origin, accessToken, PostVisibility), nil
 
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", platform)

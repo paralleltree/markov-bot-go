@@ -1,7 +1,7 @@
 package config
 
 type MastodonConfig struct {
-	Domain         string `yaml:"domain"`
+	Origin         string `yaml:"origin"`
 	AccessToken    string `yaml:"access_token"`
 	PostVisibility string `yaml:"post_visibility"`
 }

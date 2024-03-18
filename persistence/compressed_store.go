@@ -21,7 +21,7 @@ func NewCompressedStore(store PersistentStore) PersistentStore {
 func (s *compressedStore) Load() ([]byte, error) {
 	raw, err := s.store.Load()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load data: %w", err)
 	}
 	r, err := gzip.NewReader(bytes.NewReader(raw))
 	if err != nil {
@@ -47,7 +47,7 @@ func (s *compressedStore) Save(data []byte) error {
 	}
 
 	if err := s.store.Save(buf.Bytes()); err != nil {
-		return err
+		return fmt.Errorf("save compressed data: %w", err)
 	}
 
 	return nil

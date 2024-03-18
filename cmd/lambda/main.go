@@ -26,16 +26,16 @@ type PostEvent struct {
 func requestHandler(e PostEvent) error {
 	confStore, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/config.yml", e.S3KeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("new s3 store: %w", err)
 	}
 	conf, err := loadConfig(confStore)
 	if err != nil {
-		return err
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	s3Store, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/model", e.S3KeyPrefix))
 	if err != nil {
-		return err
+		return fmt.Errorf("new s3 store: %w", err)
 	}
 	modelStore := persistence.NewCompressedStore(s3Store)
 

@@ -1,5 +1,7 @@
 package lib
 
+import "fmt"
+
 // Type IteratorFunc[T any] is a function type that returns an item, a boolean indicating whether the item is valid and can try to move on to next one, and an error.
 // Caller should not process the item if the second returned value is false.'
 // ex. `item, found, err := iter()` // where `found` is false, `item` is not valid.
@@ -20,7 +22,7 @@ func BuildIterator[T any](chunkIterator ChunkIteratorFunc[T]) IteratorFunc[T] {
 			if len(buffer) <= current && hasNext {
 				newBuf, newHasNext, err := chunkIterator()
 				if err != nil {
-					return empty, false, err
+					return empty, false, fmt.Errorf("call chunk iterator: %w", err)
 				}
 				buffer = newBuf
 				hasNext = newHasNext

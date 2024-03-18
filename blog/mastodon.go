@@ -52,7 +52,7 @@ func (c *MastodonClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
 		chunkSize := 100
 		statuses, hasNext, nextMaxId, err := c.fetchPublicStatusesChunk(userId, chunkSize, maxId)
 		if err != nil {
-			return nil, false, err
+			return nil, false, fmt.Errorf("fetch public statuses: %w", err)
 		}
 		maxId = nextMaxId
 		return statuses, hasNext, nil
@@ -69,7 +69,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, false, "", err
+		return nil, false, "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
@@ -79,7 +79,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, false, "", err
+		return nil, false, "", fmt.Errorf("read response: %w", err)
 	}
 
 	statuses := []struct {
@@ -110,7 +110,7 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 func (c *MastodonClient) FetchUserId() (string, error) {
 	req, err := http.NewRequest("GET", c.buildUrl("/api/v1/accounts/verify_credentials"), nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
 	res, err := c.client.Do(req)
@@ -142,7 +142,7 @@ func (c *MastodonClient) CreatePost(payload string) error {
 
 	req, err := http.NewRequest("POST", c.buildUrl("/api/v1/statuses"), body)
 	if err != nil {
-		return err
+		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
@@ -153,7 +153,7 @@ func (c *MastodonClient) CreatePost(payload string) error {
 	defer res.Body.Close()
 	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("read response: %w", err)
 	}
 
 	status := &struct {

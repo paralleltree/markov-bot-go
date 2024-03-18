@@ -126,7 +126,7 @@ func main() {
 					}
 					if !ok || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
 						if err := handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store); err != nil {
-							return err
+							return fmt.Errorf("build chain: %w", err)
 						}
 					}
 					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount, c.Bool(DryRunKey))

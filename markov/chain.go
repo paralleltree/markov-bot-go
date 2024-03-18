@@ -2,6 +2,7 @@ package markov
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
 	"sort"
 )
@@ -109,7 +110,7 @@ func (c *Chain) Dump() ([]byte, error) {
 func LoadChain(s []byte) (*Chain, error) {
 	c := &Chain{}
 	if err := json.Unmarshal(s, c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unmarshal chain: %w", err)
 	}
 	return c, nil
 }

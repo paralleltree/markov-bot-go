@@ -29,17 +29,17 @@ func (a *mecabAnalyzer) Analyze(text string) ([][]string, error) {
 	cmd := exec.Command("mecab", "-d", dicDir, "-Owakati")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("open stdin pipe: %w", err)
 	}
 	if _, err := io.WriteString(stdin, preprocessed); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("write to stdin: %w", err)
 	}
 	if err := stdin.Close(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("close stdin: %w", err)
 	}
 	bytes, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("run mecab: %w", err)
 	}
 
 	sentences := strings.Split(string(bytes), "\n")
@@ -65,7 +65,7 @@ func (a *mecabAnalyzer) Analyze(text string) ([][]string, error) {
 func resolveDicDir(dicType string) (string, error) {
 	dicDir, err := exec.Command("mecab-config", "--dicdir").Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read mecab stdout: %w", err)
 	}
 	return path.Join(strings.TrimSuffix(string(dicDir), "\n"), dicType), nil
 }

@@ -15,9 +15,9 @@ type BotConfig struct {
 }
 
 type ConfigFile struct {
-	Input  map[string]interface{} `yaml:"input"`
-	Output map[string]interface{} `yaml:"output"`
-	ChainConfig
+	Input       map[string]interface{} `yaml:"input"`
+	Output      map[string]interface{} `yaml:"output"`
+	ChainConfig `yaml:",inline"`
 }
 
 func LoadBotConfig(body []byte) (*BotConfig, error) {

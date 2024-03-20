@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/morpheme"
@@ -107,7 +108,10 @@ func main() {
 						return fmt.Errorf("load config: %w", err)
 					}
 					overrideChainConfigFromCli(&conf.ChainConfig, c)
-					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount, c.Bool(DryRunKey))
+					if c.Bool(DryRunKey) {
+						conf.PostClient = blog.NewStdIOClient()
+					}
+					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount)
 				},
 			},
 			{
@@ -121,6 +125,9 @@ func main() {
 						return fmt.Errorf("load config: %w", err)
 					}
 					overrideChainConfigFromCli(&conf.ChainConfig, c)
+					if c.Bool(DryRunKey) {
+						conf.PostClient = blog.NewStdIOClient()
+					}
 					mod, ok, err := store.ModTime()
 					if err != nil {
 						return fmt.Errorf("get modtime: %w", err)
@@ -130,7 +137,7 @@ func main() {
 							return fmt.Errorf("build chain: %w", err)
 						}
 					}
-					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount, c.Bool(DryRunKey))
+					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount)
 				},
 			},
 		},

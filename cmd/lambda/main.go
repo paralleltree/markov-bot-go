@@ -52,7 +52,7 @@ func requestHandler(e PostEvent) error {
 		}
 	}
 
-	if err := handler.GenerateAndPost(conf.PostClient, modelStore, conf.MinWordsCount, false); err != nil {
+	if err := handler.GenerateAndPost(conf.PostClient, modelStore, conf.MinWordsCount); err != nil {
 		return fmt.Errorf("generate and post: %w", err)
 	}
 

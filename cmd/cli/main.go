@@ -51,8 +51,6 @@ func main() {
 			Value:   300,
 			EnvVars: []string{"FETCH_STATUS_COUNT"},
 		},
-		configFileFlag,
-		modelFileFlag,
 	}
 
 	postingFlags := []cli.Flag{
@@ -73,6 +71,9 @@ func main() {
 			EnvVars: []string{"EXPIRES_IN"},
 			Value:   60 * 60 * 24,
 		},
+	}
+
+	commonFlags := []cli.Flag{
 		configFileFlag,
 		modelFileFlag,
 	}
@@ -84,7 +85,7 @@ func main() {
 			{
 				Name:  "build",
 				Usage: "Builds chain model and save it",
-				Flags: buildingFlags,
+				Flags: append(append([]cli.Flag{}, commonFlags...), buildingFlags...),
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
@@ -98,7 +99,7 @@ func main() {
 			{
 				Name:  "post",
 				Usage: "Posts new text from built chain",
-				Flags: postingFlags,
+				Flags: append(append([]cli.Flag{}, commonFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
@@ -112,7 +113,7 @@ func main() {
 			{
 				Name:  "run",
 				Usage: "Posts new text after building chain if it expired",
-				Flags: append(append([]cli.Flag{}, buildingFlags...), postingFlags...),
+				Flags: append(append(append([]cli.Flag{}, commonFlags...), buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))

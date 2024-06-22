@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -13,7 +12,6 @@ import (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
 	lambda.Start(requestHandler)
 }
 

@@ -3,6 +3,7 @@ package blog
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
@@ -102,7 +103,8 @@ func (c *MastodonClient) fetchPublicStatusesChunk(userId string, count int, maxI
 			continue
 		}
 		// remove tags
-		result = append(result, tagPattern.ReplaceAllLiteralString(v.Content, ""))
+		body := html.UnescapeString(tagPattern.ReplaceAllLiteralString(v.Content, ""))
+		result = append(result, body)
 	}
 	return result, true, statuses[len(statuses)-1].Id, nil
 }

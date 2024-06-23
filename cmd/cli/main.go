@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"time"
 
@@ -27,8 +26,6 @@ const (
 )
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	configFileFlag := &cli.StringFlag{
 		Name:  ConfigFileKey,
 		Usage: "Load configuration from `FILE`. If command-line arguments or environment variables are set, they override the configuration file.",

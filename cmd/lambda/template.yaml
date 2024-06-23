@@ -94,6 +94,14 @@ Resources:
               "s3KeyPrefix": "${S3KeyPrefix}"
             }
 
+  InvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MarkovBotFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MarkovBotEventBridge.Arn
+
   MarkovBotBucket:
     Type: AWS::S3::Bucket
     Properties:

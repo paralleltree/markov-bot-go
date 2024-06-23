@@ -13,6 +13,9 @@ Parameters:
     Type: String
     Default: markov-bot
     Description: Enter the name of s3 bucket to store configuration and model.
+  S3KeyPrefix:
+    Type: String
+    Description: Enter the prefix for s3 path to store configuration and model.
 
 Resources:
   MarkovBotFunction:
@@ -73,6 +76,31 @@ Resources:
                   }
                 ]
               }
+
+  MarkovBotEventBridge:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: "rate(20 minutes)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt MarkovBotFunction.Arn
+          Id: "MarkovBotFunction"
+          RetryPolicy:
+            MaximumRetryAttempts: 1
+          Input: !Sub |-
+            {
+              "s3Region": "${AWS::Region}",
+              "s3BucketName": "${S3BucketName}",
+              "s3KeyPrefix": "${S3KeyPrefix}"
+            }
+
+  InvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MarkovBotFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MarkovBotEventBridge.Arn
 
   MarkovBotBucket:
     Type: AWS::S3::Bucket

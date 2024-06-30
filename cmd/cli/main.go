@@ -20,7 +20,7 @@ const (
 	ModelFileKey        = "model-file"
 	StateSizeKey        = "state-size"
 	FetchStatusCountKey = "fetch-status-count"
-	MinWordsCount       = "min-words-count"
+	MinWordsCountKey    = "min-words-count"
 	ExpiresInKey        = "expires-in"
 	DryRunKey           = "dry-run"
 )
@@ -58,7 +58,7 @@ func main() {
 			EnvVars: []string{"DRY_RUN"},
 		},
 		&cli.IntFlag{
-			Name:    MinWordsCount,
+			Name:    MinWordsCountKey,
 			Usage:   "specifies the minimum number of words",
 			EnvVars: []string{"MIN_WORDS_COUNT"},
 			Value:   1,
@@ -156,8 +156,8 @@ func overrideChainConfigFromCli(conf *config.ChainConfig, c *cli.Context) {
 	if c.IsSet(ExpiresInKey) {
 		conf.ExpiresIn = c.Int(ExpiresInKey)
 	}
-	if c.IsSet(MinWordsCount) {
-		conf.MinWordsCount = c.Int(MinWordsCount)
+	if c.IsSet(MinWordsCountKey) {
+		conf.MinWordsCount = c.Int(MinWordsCountKey)
 	}
 }
 

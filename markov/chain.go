@@ -66,6 +66,10 @@ func (c *Chain) Generate() []string {
 	for i := 0; ; i++ {
 		tailNode := c.findOrAddTailNode(buf[i : i+c.StateSize])
 		items, cumsum := tailNode.accumulateOccurrences()
+		if len(items) == 0 {
+			// no words found in this Chain
+			return nil
+		}
 		r := rand.Intn(cumsum[len(cumsum)-1])
 		elected := items[sort.SearchInts(cumsum, r)]
 		if elected == EOS {

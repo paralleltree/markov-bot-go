@@ -1,0 +1,31 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+
+      - name: Run Tests
+        run: go test ./...
+
+      - name: Build cli
+        run: go build -o cli cmd/cli/main.go
+
+      - name: Build Lambda function
+        run: go build -o lambda cmd/lambda/main.go

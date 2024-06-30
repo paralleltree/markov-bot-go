@@ -57,6 +57,9 @@ func resolveBlogClient(conf map[string]interface{}) (blog.BlogClient, error) {
 		PostVisibility := resolveMapValue[string](conf, "post_visibility")
 		return blog.NewMastodonClient(origin, accessToken, PostVisibility), nil
 
+	case "stdio":
+		return blog.NewStdIOClient(), nil
+
 	default:
 		return nil, fmt.Errorf("unsupported platform: %s", platform)
 	}

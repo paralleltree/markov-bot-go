@@ -22,7 +22,9 @@ jobs:
           go-version-file: go.mod
 
       - name: Run Tests
-        run: go test ./...
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: go test ./...
 
       - name: Build cli
         run: go build -o cli cmd/cli/main.go

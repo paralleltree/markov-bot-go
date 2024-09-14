@@ -26,6 +26,7 @@ func requestHandler(e PostEvent) error {
 	if err != nil {
 		return fmt.Errorf("new s3 store: %w", err)
 	}
+
 	conf, err := loadConfig(confStore)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
@@ -37,6 +38,14 @@ func requestHandler(e PostEvent) error {
 	}
 	modelStore := persistence.NewCompressedStore(s3Store)
 
+	if err := run(conf, modelStore); err != nil {
+		return fmt.Errorf("run: %w", err)
+	}
+
+	return nil
+}
+
+func run(conf *config.BotConfig, modelStore persistence.PersistentStore) error {
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
 	mod, ok, err := modelStore.ModTime()

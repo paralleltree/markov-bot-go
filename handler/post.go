@@ -9,13 +9,17 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
+const maxAttemptsCount = 100
+
+var ErrGenerationFailed = fmt.Errorf("failed to generate a post")
+
 func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
 	model, err := loadModel(store)
 	if err != nil {
 		return fmt.Errorf("load model: %w", err)
 	}
 
-	for {
+	for i := 0; i < maxAttemptsCount; i++ {
 		generated := model.Generate()
 		if len(generated) < minWordsCount {
 			continue
@@ -25,9 +29,9 @@ func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, 
 		if err := client.CreatePost(text); err != nil {
 			return fmt.Errorf("create status: %w", err)
 		}
-		break
+		return nil
 	}
-	return nil
+	return ErrGenerationFailed
 }
 
 func loadModel(store persistence.PersistentStore) (*markov.Chain, error) {

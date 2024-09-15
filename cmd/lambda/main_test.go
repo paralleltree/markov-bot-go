@@ -12,7 +12,7 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
+func TestRun_PostCommand_WhenModelNotExists_CreatesModel(t *testing.T) {
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
@@ -25,7 +25,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	store := persistence.NewMemoryStore()
 
 	// act
-	if err := run(ctx, conf, store); err != nil {
+	if err := run(ctx, PostCommand, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -36,7 +36,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	}
 }
 
-func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelAndReturnsNoError(t *testing.T) {
+func TestRun_PostCommand_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelAndReturnsNoError(t *testing.T) {
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
@@ -49,7 +49,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	store := persistence.NewMemoryStore()
 
 	// build model
-	if err := run(ctx, conf, store); err != nil {
+	if err := run(ctx, BuildCommand, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -63,7 +63,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	}
 
 	// act
-	if err := run(ctx, conf, store); err != nil {
+	if err := run(ctx, PostCommand, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 

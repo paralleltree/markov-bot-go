@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/paralleltree/markov-bot-go/config"
@@ -17,7 +15,13 @@ func main() {
 	lambda.Start(requestHandler)
 }
 
+const (
+	PostCommand  = "post"
+	BuildCommand = "build"
+)
+
 type PostEvent struct {
+	Command      string `json:"command"`
 	S3Region     string `json:"s3Region"`
 	S3BucketName string `json:"s3BucketName"`
 	S3KeyPrefix  string `json:"s3KeyPrefix"`
@@ -40,17 +44,17 @@ func requestHandler(ctx context.Context, e PostEvent) error {
 	}
 	modelStore := persistence.NewCompressedStore(s3Store)
 
-	if err := run(ctx, conf, modelStore); err != nil {
+	if err := run(ctx, e.Command, conf, modelStore); err != nil {
 		return fmt.Errorf("run: %w", err)
 	}
 
 	return nil
 }
 
-func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.PersistentStore) error {
+func run(ctx context.Context, command string, conf *config.BotConfig, modelStore persistence.PersistentStore) error {
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
-	mod, ok, err := modelStore.ModTime(ctx)
+	_, ok, err := modelStore.ModTime(ctx)
 	if err != nil {
 		return fmt.Errorf("get modtime: %w", err)
 	}
@@ -59,18 +63,9 @@ func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.Per
 		return handler.BuildChain(ctx, conf.FetchClient, analyzer, modelStore, handler.WithFetchStatusCount(conf.FetchStatusCount), handler.WithStateSize(conf.StateSize))
 	}
 
-	if !ok {
-		// return an error if initial build fails
+	if (!ok && command == PostCommand) || (command == BuildCommand) {
 		if err := buildChain(); err != nil {
 			return fmt.Errorf("build chain: %w", err)
-		}
-	}
-
-	if float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
-		// attempt to build chain if expired
-		// when building chain fails, it will use the existing chain
-		if err := buildChain(); err != nil {
-			fmt.Fprintf(os.Stderr, "build chain: %v\n", err)
 		}
 	}
 

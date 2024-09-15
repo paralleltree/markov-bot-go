@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
@@ -108,47 +107,6 @@ func main() {
 					if c.Bool(DryRunKey) {
 						conf.PostClient = blog.NewStdIOClient()
 					}
-					return handler.GenerateAndPost(c.Context, conf.PostClient, store, handler.WithMinWordsCount(conf.MinWordsCount))
-				},
-			},
-			{
-				Name:  "run",
-				Usage: "DEPRECATED: Posts new text after building chain if it expired",
-				Flags: append(append(append([]cli.Flag{}, commonFlags...), buildingFlags...), postingFlags...),
-				Action: func(c *cli.Context) error {
-					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
-					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
-					if err != nil {
-						return fmt.Errorf("load config: %w", err)
-					}
-					overrideChainConfigFromCli(&conf.ChainConfig, c)
-					if c.Bool(DryRunKey) {
-						conf.PostClient = blog.NewStdIOClient()
-					}
-					mod, ok, err := store.ModTime(c.Context)
-					if err != nil {
-						return fmt.Errorf("get modtime: %w", err)
-					}
-
-					buildChain := func() error {
-						return handler.BuildChain(c.Context, conf.FetchClient, analyzer, store, handler.WithFetchStatusCount(conf.FetchStatusCount), handler.WithStateSize(conf.StateSize))
-					}
-
-					if !ok {
-						// return an error if initial build fails
-						if err := buildChain(); err != nil {
-							return fmt.Errorf("build chain: %w", err)
-						}
-					}
-
-					if float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
-						// attempt to build chain if expired
-						// when building chain fails, it will use the existing chain
-						if err := buildChain(); err != nil {
-							fmt.Fprintf(os.Stderr, "build chain: %v\n", err)
-						}
-					}
-
 					return handler.GenerateAndPost(c.Context, conf.PostClient, store, handler.WithMinWordsCount(conf.MinWordsCount))
 				},
 			},

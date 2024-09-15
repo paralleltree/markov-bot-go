@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -23,9 +25,14 @@ const (
 	MinWordsCountKey    = "min-words-count"
 	ExpiresInKey        = "expires-in"
 	DryRunKey           = "dry-run"
+	VerboseKey          = "verbose"
 )
 
 func main() {
+	logLevelHandler := NewVariableLevelHandler(slog.NewTextHandler(os.Stderr, nil))
+	logger := slog.New(logLevelHandler)
+	slog.SetDefault(logger)
+
 	configFileFlag := &cli.StringFlag{
 		Name:  ConfigFileKey,
 		Usage: "Load configuration from `FILE`. If command-line arguments or environment variables are set, they override the configuration file.",
@@ -34,6 +41,10 @@ func main() {
 		Name:     ModelFileKey,
 		Usage:    "Load model from `FILE`.",
 		Required: true,
+	}
+	verboseFlag := &cli.BoolFlag{
+		Name:  VerboseKey,
+		Usage: "Enable verbose logging",
 	}
 
 	buildingFlags := []cli.Flag{
@@ -74,16 +85,25 @@ func main() {
 	commonFlags := []cli.Flag{
 		configFileFlag,
 		modelFileFlag,
+		verboseFlag,
 	}
 
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
+	beforeFunc := func(c *cli.Context) error {
+		if c.Bool(VerboseKey) {
+			logLevelHandler.SetLevel(slog.LevelDebug)
+		}
+		return nil
+	}
+
 	app := cli.App{
 		Commands: []*cli.Command{
 			{
-				Name:  "build",
-				Usage: "Builds chain model and save it",
-				Flags: append(append([]cli.Flag{}, commonFlags...), buildingFlags...),
+				Name:   "build",
+				Usage:  "Builds chain model and save it",
+				Flags:  append(append([]cli.Flag{}, commonFlags...), buildingFlags...),
+				Before: beforeFunc,
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
@@ -95,9 +115,10 @@ func main() {
 				},
 			},
 			{
-				Name:  "post",
-				Usage: "Posts new text from built chain",
-				Flags: append(append([]cli.Flag{}, commonFlags...), postingFlags...),
+				Name:   "post",
+				Usage:  "Posts new text from built chain",
+				Flags:  append(append([]cli.Flag{}, commonFlags...), postingFlags...),
+				Before: beforeFunc,
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))
 					conf, err := LoadBotConfigFromFile(c.String(ConfigFileKey))
@@ -188,4 +209,21 @@ func LoadBotConfigFromFile(path string) (*config.BotConfig, error) {
 		return nil, fmt.Errorf("read config file: %w", err)
 	}
 	return config.LoadBotConfig(confBody)
+}
+
+type variableLevelHandler struct {
+	slog.Handler
+	level slog.Leveler
+}
+
+func NewVariableLevelHandler(h slog.Handler) *variableLevelHandler {
+	return &variableLevelHandler{h, slog.LevelInfo}
+}
+
+func (h *variableLevelHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= h.level.Level()
+}
+
+func (h *variableLevelHandler) SetLevel(level slog.Level) {
+	h.level = level
 }

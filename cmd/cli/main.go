@@ -129,11 +129,26 @@ func main() {
 					if err != nil {
 						return fmt.Errorf("get modtime: %w", err)
 					}
-					if !ok || float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
-						if err := handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store); err != nil {
+
+					buildChain := func() error {
+						return handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
+					}
+
+					if !ok {
+						// return an error if initial build fails
+						if err := buildChain(); err != nil {
 							return fmt.Errorf("build chain: %w", err)
 						}
 					}
+
+					if float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
+						// attempt to build chain if expired
+						// when building chain fails, it will use the existing chain
+						if err := buildChain(); err != nil {
+							fmt.Fprintf(os.Stderr, "build chain: %v\n", err)
+						}
+					}
+
 					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount)
 				},
 			},

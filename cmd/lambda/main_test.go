@@ -58,7 +58,6 @@ func TestRun_PostCommand_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithEx
 		PostClient:  postClient,
 		ChainConfig: config.ChainConfig{
 			FetchStatusCount: 1,
-			ExpiresIn:        0, // force building chain
 		},
 	}
 

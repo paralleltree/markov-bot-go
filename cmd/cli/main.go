@@ -20,7 +20,6 @@ const (
 	StateSizeKey        = "state-size"
 	FetchStatusCountKey = "fetch-status-count"
 	MinWordsCountKey    = "min-words-count"
-	ExpiresInKey        = "expires-in"
 	DryRunKey           = "dry-run"
 )
 
@@ -61,12 +60,6 @@ func main() {
 			Usage:   "specifies the minimum number of words",
 			EnvVars: []string{"MIN_WORDS_COUNT"},
 			Value:   1,
-		},
-		&cli.IntFlag{
-			Name:    ExpiresInKey,
-			Usage:   "specifies the duration to expire the model in seconds.",
-			EnvVars: []string{"EXPIRES_IN"},
-			Value:   60 * 60 * 24,
 		},
 	}
 
@@ -125,9 +118,6 @@ func overrideChainConfigFromCli(conf *config.ChainConfig, c *cli.Context) {
 	}
 	if c.IsSet(FetchStatusCountKey) {
 		conf.FetchStatusCount = c.Int(FetchStatusCountKey)
-	}
-	if c.IsSet(ExpiresInKey) {
-		conf.ExpiresIn = c.Int(ExpiresInKey)
 	}
 	if c.IsSet(MinWordsCountKey) {
 		conf.MinWordsCount = c.Int(MinWordsCountKey)

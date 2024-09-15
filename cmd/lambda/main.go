@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	logger := slog.New(NewTraceHandler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	slog.SetDefault(logger)
 	lambda.Start(requestHandler)
 }
@@ -36,23 +36,16 @@ func (e *PostEvent) LogValue() slog.Value {
 }
 
 func requestHandler(ctx context.Context, e PostEvent) error {
-	lambdaCtx, ok := lambdacontext.FromContext(ctx)
-	if !ok {
-		return fmt.Errorf("get lambda context")
-	}
-
-	logger := slog.With(slog.String("aws_request_id", lambdaCtx.AwsRequestID))
-
-	logger.LogAttrs(ctx, slog.LevelInfo, "",
+	slog.LogAttrs(ctx, slog.LevelInfo, "",
 		slog.String("event", "requestHandling"),
 		slog.Any("payload", e),
 	)
-	defer logger.LogAttrs(ctx, slog.LevelInfo, "",
+	defer slog.LogAttrs(ctx, slog.LevelInfo, "",
 		slog.String("event", "requestHandled"),
 	)
 
 	if err := handle(ctx, e); err != nil {
-		logger.LogAttrs(ctx, slog.LevelError, fmt.Sprintf("handle error: %v", err))
+		slog.LogAttrs(ctx, slog.LevelError, fmt.Sprintf("handle error: %v", err))
 		return fmt.Errorf("handle: %w", err)
 	}
 
@@ -129,4 +122,22 @@ func loadConfig(ctx context.Context, store persistence.PersistentStore) (*config
 	}
 
 	return conf, nil
+}
+
+type traceHandler struct {
+	slog.Handler
+}
+
+func NewTraceHandler(h slog.Handler) *traceHandler {
+	return &traceHandler{h}
+}
+
+func (h *traceHandler) Handle(ctx context.Context, r slog.Record) error {
+	lambdaCtx, ok := lambdacontext.FromContext(ctx)
+	reqID := "-"
+	if ok {
+		reqID = lambdaCtx.AwsRequestID
+	}
+	r.AddAttrs(slog.String("aws_request_id", reqID))
+	return h.Handler.Handle(ctx, r)
 }

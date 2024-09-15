@@ -10,11 +10,21 @@ on:
       - synchronize
       - reopened
 
+env:
+  REGISTRY: ghcr.io
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Go
         uses: actions/setup-go@v3
@@ -22,7 +32,10 @@ jobs:
           go-version-file: go.mod
 
       - name: Run Tests
-        run: go test ./...
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: go test ./...
+          imageName: ${{ env.REGISTRY }}/${{ github.repository }}-devcontainer
 
       - name: Build cli
         run: go build -o cli cmd/cli/main.go

@@ -9,6 +9,7 @@ on:
       - reopened
 
 env:
+  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   REGISTRY: ghcr.io
 
 jobs:

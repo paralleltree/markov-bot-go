@@ -113,7 +113,7 @@ func main() {
 			},
 			{
 				Name:  "run",
-				Usage: "Posts new text after building chain if it expired",
+				Usage: "DEPRECATED: Posts new text after building chain if it expired",
 				Flags: append(append(append([]cli.Flag{}, commonFlags...), buildingFlags...), postingFlags...),
 				Action: func(c *cli.Context) error {
 					store := persistence.NewCompressedStore(persistence.NewFileStore(c.String(ModelFileKey)))

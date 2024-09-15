@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -109,6 +110,9 @@ func (c *MastodonClient) fetchPublicStatusesChunk(ctx context.Context, userId st
 		body := html.UnescapeString(tagPattern.ReplaceAllLiteralString(v.Content, ""))
 		result = append(result, body)
 	}
+
+	slog.LogAttrs(nil, slog.LevelDebug, "", slog.String("event", "statusesChunkFetched"), slog.String("blog_type", "mastodon"), slog.String("request_url", url))
+
 	return result, true, statuses[len(statuses)-1].Id, nil
 }
 

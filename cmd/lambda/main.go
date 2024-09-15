@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-lambda-go/lambdacontext"
 	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/morpheme"
@@ -14,6 +16,8 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 	lambda.Start(requestHandler)
 }
 
@@ -23,7 +27,39 @@ type PostEvent struct {
 	S3KeyPrefix  string `json:"s3KeyPrefix"`
 }
 
+func (e *PostEvent) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("s3Region", e.S3Region),
+		slog.String("s3BucketName", e.S3BucketName),
+		slog.String("s3KeyPrefix", e.S3KeyPrefix),
+	)
+}
+
 func requestHandler(ctx context.Context, e PostEvent) error {
+	lambdaCtx, ok := lambdacontext.FromContext(ctx)
+	if !ok {
+		return fmt.Errorf("get lambda context")
+	}
+
+	logger := slog.With(slog.String("aws_request_id", lambdaCtx.AwsRequestID))
+
+	logger.LogAttrs(ctx, slog.LevelInfo, "",
+		slog.String("event", "requestHandling"),
+		slog.Any("payload", e),
+	)
+	defer logger.LogAttrs(ctx, slog.LevelInfo, "",
+		slog.String("event", "requestHandled"),
+	)
+
+	if err := handle(ctx, e); err != nil {
+		logger.LogAttrs(ctx, slog.LevelError, fmt.Sprintf("handle error: %v", err))
+		return fmt.Errorf("handle: %w", err)
+	}
+
+	return nil
+}
+
+func handle(ctx context.Context, e PostEvent) error {
 	confStore, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/config.yml", e.S3KeyPrefix))
 	if err != nil {
 		return fmt.Errorf("new s3 store: %w", err)

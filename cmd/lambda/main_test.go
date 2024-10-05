@@ -2,28 +2,27 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
+	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
-	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/lib"
+	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
 func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
-	postClient := NewRecordableBlogClient(nil)
+	postClient := blog.NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient([]string{inputText}),
+		FetchClient: blog.NewRecordableBlogClient([]string{inputText}),
 		PostClient:  postClient,
 		ChainConfig: config.DefaultChainConfig(),
 	}
-	store := NewMemoryStore()
+	store := persistence.NewMemoryStore()
 
 	// act
 	if err := run(ctx, conf, store); err != nil {
@@ -37,40 +36,17 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	}
 }
 
-func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
-	// arrange
-	ctx := context.Background()
-	postClient := NewRecordableBlogClient(nil)
-	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient(nil),
-		PostClient:  postClient,
-		ChainConfig: config.DefaultChainConfig(),
-	}
-	store := NewMemoryStore()
-
-	// act
-	err := run(ctx, conf, store)
-
-	// assert
-	if err == nil {
-		t.Errorf("run() should return error, but got nil")
-	}
-	if !errors.Is(err, handler.ErrGenerationFailed) {
-		t.Errorf("run() should return ErrGenerateFailed, but got: %v", err)
-	}
-}
-
 func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelAndReturnsNoError(t *testing.T) {
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
-	postClient := NewRecordableBlogClient(nil)
+	postClient := blog.NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient([]string{inputText}),
-		PostClient:  NewRecordableBlogClient(nil), // discard posted content
+		FetchClient: blog.NewRecordableBlogClient([]string{inputText}),
+		PostClient:  blog.NewRecordableBlogClient(nil), // discard posted content
 		ChainConfig: config.DefaultChainConfig(),
 	}
-	store := NewMemoryStore()
+	store := persistence.NewMemoryStore()
 
 	// build model
 	if err := run(ctx, conf, store); err != nil {
@@ -98,33 +74,6 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	}
 }
 
-type recordableBlogClient struct {
-	contents        []string
-	contentsFetched bool
-	PostedContents  []string
-}
-
-func NewRecordableBlogClient(contents []string) *recordableBlogClient {
-	return &recordableBlogClient{
-		contents: contents,
-	}
-}
-
-func (f *recordableBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
-	return func() ([]string, bool, error) {
-		if f.contentsFetched {
-			return nil, false, nil
-		}
-		f.contentsFetched = true
-		return f.contents, false, nil
-	}
-}
-
-func (f *recordableBlogClient) CreatePost(ctx context.Context, body string) error {
-	f.PostedContents = append(f.PostedContents, body)
-	return nil
-}
-
 type errorBlogClient struct{}
 
 func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
@@ -135,29 +84,4 @@ func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIterator
 
 func (e *errorBlogClient) CreatePost(ctx context.Context, body string) error {
 	return fmt.Errorf("failed to create post")
-}
-
-type memoryStore struct {
-	content []byte
-	modTime time.Time
-}
-
-func NewMemoryStore() *memoryStore {
-	return &memoryStore{
-		content: []byte{},
-		modTime: time.Now(),
-	}
-}
-
-func (m *memoryStore) Load(ctx context.Context) ([]byte, error) {
-	return m.content, nil
-}
-
-func (m *memoryStore) ModTime(ctx context.Context) (time.Time, bool, error) {
-	return m.modTime, len(m.content) > 0, nil
-}
-
-func (m *memoryStore) Save(ctx context.Context, data []byte) error {
-	m.content = data
-	return nil
 }

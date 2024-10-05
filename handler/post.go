@@ -27,7 +27,7 @@ func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persiste
 		}
 		text := strings.Join(generated, "")
 
-		if err := client.CreatePost(text); err != nil {
+		if err := client.CreatePost(ctx, text); err != nil {
 			return fmt.Errorf("create status: %w", err)
 		}
 		return nil

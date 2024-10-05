@@ -13,7 +13,7 @@ import (
 
 func BuildChain(ctx context.Context, client blog.BlogClient, analyzer morpheme.MorphemeAnalyzer, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
 	chain := markov.NewChain(stateSize)
-	iterator := lib.BuildIterator(client.GetPostsFetcher())
+	iterator := lib.BuildIterator(client.GetPostsFetcher(ctx))
 
 	for i := 0; i < fetchStatusCount; i++ {
 		status, hasNext, err := iterator()

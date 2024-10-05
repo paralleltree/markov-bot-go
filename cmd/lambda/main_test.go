@@ -110,7 +110,7 @@ func NewRecordableBlogClient(contents []string) *recordableBlogClient {
 	}
 }
 
-func (f *recordableBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
+func (f *recordableBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
 	return func() ([]string, bool, error) {
 		if f.contentsFetched {
 			return nil, false, nil
@@ -120,20 +120,20 @@ func (f *recordableBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
 	}
 }
 
-func (f *recordableBlogClient) CreatePost(body string) error {
+func (f *recordableBlogClient) CreatePost(ctx context.Context, body string) error {
 	f.PostedContents = append(f.PostedContents, body)
 	return nil
 }
 
 type errorBlogClient struct{}
 
-func (e *errorBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
+func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
 	return func() ([]string, bool, error) {
 		return nil, false, fmt.Errorf("failed to fetch posts")
 	}
 }
 
-func (e *errorBlogClient) CreatePost(body string) error {
+func (e *errorBlogClient) CreatePost(ctx context.Context, body string) error {
 	return fmt.Errorf("failed to create post")
 }
 

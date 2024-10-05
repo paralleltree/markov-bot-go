@@ -2,6 +2,7 @@ package blog
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 
@@ -15,7 +16,7 @@ func NewStdIOClient() BlogClient {
 	return &stdIOClient{}
 }
 
-func (c *stdIOClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
+func (c *stdIOClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
 	stdin := bufio.NewScanner(os.Stdin)
 	return func() ([]string, bool, error) {
 		hasNext := stdin.Scan()
@@ -31,7 +32,7 @@ func (c *stdIOClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
 	}
 }
 
-func (c *stdIOClient) CreatePost(body string) error {
+func (c *stdIOClient) CreatePost(ctx context.Context, body string) error {
 	fmt.Println(body)
 	return nil
 }

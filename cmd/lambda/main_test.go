@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -14,6 +15,7 @@ import (
 
 func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
@@ -24,7 +26,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	store := NewMemoryStore()
 
 	// act
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -37,6 +39,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 
 func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
 		FetchClient: NewRecordableBlogClient(nil),
@@ -46,7 +49,7 @@ func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 	store := NewMemoryStore()
 
 	// act
-	err := run(conf, store)
+	err := run(ctx, conf, store)
 
 	// assert
 	if err == nil {
@@ -59,6 +62,7 @@ func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 
 func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelAndReturnsNoError(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
@@ -69,7 +73,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	store := NewMemoryStore()
 
 	// build model
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -83,7 +87,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	}
 
 	// act
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -106,7 +110,7 @@ func NewRecordableBlogClient(contents []string) *recordableBlogClient {
 	}
 }
 
-func (f *recordableBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
+func (f *recordableBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
 	return func() ([]string, bool, error) {
 		if f.contentsFetched {
 			return nil, false, nil
@@ -116,20 +120,20 @@ func (f *recordableBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
 	}
 }
 
-func (f *recordableBlogClient) CreatePost(body string) error {
+func (f *recordableBlogClient) CreatePost(ctx context.Context, body string) error {
 	f.PostedContents = append(f.PostedContents, body)
 	return nil
 }
 
 type errorBlogClient struct{}
 
-func (e *errorBlogClient) GetPostsFetcher() lib.ChunkIteratorFunc[string] {
+func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
 	return func() ([]string, bool, error) {
 		return nil, false, fmt.Errorf("failed to fetch posts")
 	}
 }
 
-func (e *errorBlogClient) CreatePost(body string) error {
+func (e *errorBlogClient) CreatePost(ctx context.Context, body string) error {
 	return fmt.Errorf("failed to create post")
 }
 
@@ -145,15 +149,15 @@ func NewMemoryStore() *memoryStore {
 	}
 }
 
-func (m *memoryStore) Load() ([]byte, error) {
+func (m *memoryStore) Load(ctx context.Context) ([]byte, error) {
 	return m.content, nil
 }
 
-func (m *memoryStore) ModTime() (time.Time, bool, error) {
+func (m *memoryStore) ModTime(ctx context.Context) (time.Time, bool, error) {
 	return m.modTime, len(m.content) > 0, nil
 }
 
-func (m *memoryStore) Save(data []byte) error {
+func (m *memoryStore) Save(ctx context.Context, data []byte) error {
 	m.content = data
 	return nil
 }

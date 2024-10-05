@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -13,8 +14,8 @@ const maxAttemptsCount = 100
 
 var ErrGenerationFailed = fmt.Errorf("failed to generate a post")
 
-func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
-	model, err := loadModel(store)
+func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
+	model, err := loadModel(ctx, store)
 	if err != nil {
 		return fmt.Errorf("load model: %w", err)
 	}
@@ -26,7 +27,7 @@ func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, 
 		}
 		text := strings.Join(generated, "")
 
-		if err := client.CreatePost(text); err != nil {
+		if err := client.CreatePost(ctx, text); err != nil {
 			return fmt.Errorf("create status: %w", err)
 		}
 		return nil
@@ -34,8 +35,8 @@ func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, 
 	return ErrGenerationFailed
 }
 
-func loadModel(store persistence.PersistentStore) (*markov.Chain, error) {
-	data, err := store.Load()
+func loadModel(ctx context.Context, store persistence.PersistentStore) (*markov.Chain, error) {
+	data, err := store.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load chain data: %w", err)
 	}

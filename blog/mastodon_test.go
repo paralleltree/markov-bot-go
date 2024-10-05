@@ -1,6 +1,7 @@
 package blog_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,6 +22,7 @@ func TestMastodonClient_CreateStatus(t *testing.T) {
 	httpClient, mux, teardown := newTestServer()
 	defer teardown()
 
+	ctx := context.Background()
 	wantHost := "foo.net"
 	wantContentType := "application/x-www-form-urlencoded"
 	wantAccessToken := "token"
@@ -66,7 +68,7 @@ func TestMastodonClient_CreateStatus(t *testing.T) {
 	})
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, wantVisibility, httpClient)
-	err := client.CreatePost(wantBody)
+	err := client.CreatePost(ctx, wantBody)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -76,6 +78,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsSpecifiedCount(t *test
 	httpClient, mux, teardown := newTestServer()
 	defer teardown()
 
+	ctx := context.Background()
 	wantHost := "foo.jp"
 	wantAccountId := "100"
 	wantAccessToken := "token"
@@ -134,7 +137,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsSpecifiedCount(t *test
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iterator := client.GetPostsFetcher()
+	iterator := client.GetPostsFetcher(ctx)
 	gotStatuses := consumeIterator(t, iterator, len(wantStatuses))
 
 	if len(wantStatuses) != len(gotStatuses) {
@@ -153,6 +156,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 	httpClient, mux, teardown := newTestServer()
 	defer teardown()
 
+	ctx := context.Background()
 	wantHost := "foo.jp"
 	wantAccountId := "100"
 	wantAccessToken := "token"
@@ -211,7 +215,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_ReturnsPublicStatusesWithPagin
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iterator := client.GetPostsFetcher()
+	iterator := client.GetPostsFetcher(ctx)
 	gotStatuses := consumeIterator(t, iterator, statusesCount)
 
 	if len(allStatuses) != len(gotStatuses) {
@@ -230,6 +234,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsWithRequiredParameters
 	httpClient, mux, teardown := newTestServer()
 	defer teardown()
 
+	ctx := context.Background()
 	wantHost := "foo.net"
 	wantAccessToken := "token"
 	wantAuthorizationHeader := fmt.Sprintf("Bearer %s", wantAccessToken)
@@ -263,7 +268,7 @@ func TestMastodonClient_FetchLatestPublicStatuses_RequestsWithRequiredParameters
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantAccountId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	iter := client.GetPostsFetcher()
+	iter := client.GetPostsFetcher(ctx)
 	consumeIterator(t, iter, 1)
 }
 
@@ -271,6 +276,7 @@ func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
 	httpClient, mux, teardown := newTestServer()
 	defer teardown()
 
+	ctx := context.Background()
 	wantHost := "foo.net"
 	wantAccessToken := "token"
 	wantId := "123"
@@ -279,7 +285,7 @@ func TestMastodonClient_FetchUserId_ReturnsUserId(t *testing.T) {
 	inflateVerifyCredentialsHandler(t, mux, wantHost, wantAuthorizationHeader, wantId)
 
 	client := blog.NewMastodonClientWithHttpClient(wantHost, wantAccessToken, "", httpClient)
-	gotId, err := client.FetchUserId()
+	gotId, err := client.FetchUserId(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error while fetching user id: %v", err)
 	}

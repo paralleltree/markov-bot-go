@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -17,7 +18,7 @@ func NewFileStore(path string) PersistentStore {
 	}
 }
 
-func (s *fileStore) Load() ([]byte, error) {
+func (s *fileStore) Load(ctx context.Context) ([]byte, error) {
 	f, err := os.Open(s.path)
 	if err != nil {
 		return nil, fmt.Errorf("open file: %w", err)
@@ -31,7 +32,7 @@ func (s *fileStore) Load() ([]byte, error) {
 	return stream, nil
 }
 
-func (s *fileStore) ModTime() (time.Time, bool, error) {
+func (s *fileStore) ModTime(ctx context.Context) (time.Time, bool, error) {
 	stat, err := os.Stat(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -43,7 +44,7 @@ func (s *fileStore) ModTime() (time.Time, bool, error) {
 	return stat.ModTime(), true, nil
 }
 
-func (s *fileStore) Save(data []byte) error {
+func (s *fileStore) Save(ctx context.Context, data []byte) error {
 	f, err := os.Create(s.path)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)

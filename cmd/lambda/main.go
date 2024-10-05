@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -22,13 +23,13 @@ type PostEvent struct {
 	S3KeyPrefix  string `json:"s3KeyPrefix"`
 }
 
-func requestHandler(e PostEvent) error {
+func requestHandler(ctx context.Context, e PostEvent) error {
 	confStore, err := persistence.NewS3Store(e.S3Region, e.S3BucketName, fmt.Sprintf("%s/config.yml", e.S3KeyPrefix))
 	if err != nil {
 		return fmt.Errorf("new s3 store: %w", err)
 	}
 
-	conf, err := loadConfig(confStore)
+	conf, err := loadConfig(ctx, confStore)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
@@ -39,23 +40,23 @@ func requestHandler(e PostEvent) error {
 	}
 	modelStore := persistence.NewCompressedStore(s3Store)
 
-	if err := run(conf, modelStore); err != nil {
+	if err := run(ctx, conf, modelStore); err != nil {
 		return fmt.Errorf("run: %w", err)
 	}
 
 	return nil
 }
 
-func run(conf *config.BotConfig, modelStore persistence.PersistentStore) error {
+func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.PersistentStore) error {
 	analyzer := morpheme.NewMecabAnalyzer("mecab-ipadic-neologd")
 
-	mod, ok, err := modelStore.ModTime()
+	mod, ok, err := modelStore.ModTime(ctx)
 	if err != nil {
 		return fmt.Errorf("get modtime: %w", err)
 	}
 
 	buildChain := func() error {
-		return handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, modelStore)
+		return handler.BuildChain(ctx, conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, modelStore)
 	}
 
 	if !ok {
@@ -73,15 +74,15 @@ func run(conf *config.BotConfig, modelStore persistence.PersistentStore) error {
 		}
 	}
 
-	if err := handler.GenerateAndPost(conf.PostClient, modelStore, conf.MinWordsCount); err != nil {
+	if err := handler.GenerateAndPost(ctx, conf.PostClient, modelStore, conf.MinWordsCount); err != nil {
 		return fmt.Errorf("generate and post: %w", err)
 	}
 
 	return nil
 }
 
-func loadConfig(store persistence.PersistentStore) (*config.BotConfig, error) {
-	data, err := store.Load()
+func loadConfig(ctx context.Context, store persistence.PersistentStore) (*config.BotConfig, error) {
+	data, err := store.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
 	}

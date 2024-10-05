@@ -3,6 +3,7 @@ package persistence
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -18,8 +19,8 @@ func NewCompressedStore(store PersistentStore) PersistentStore {
 	}
 }
 
-func (s *compressedStore) Load() ([]byte, error) {
-	raw, err := s.store.Load()
+func (s *compressedStore) Load(ctx context.Context) ([]byte, error) {
+	raw, err := s.store.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load data: %w", err)
 	}
@@ -36,17 +37,17 @@ func (s *compressedStore) Load() ([]byte, error) {
 	return body, nil
 }
 
-func (s *compressedStore) ModTime() (time.Time, bool, error) {
-	return s.store.ModTime()
+func (s *compressedStore) ModTime(ctx context.Context) (time.Time, bool, error) {
+	return s.store.ModTime(ctx)
 }
 
-func (s *compressedStore) Save(data []byte) error {
+func (s *compressedStore) Save(ctx context.Context, data []byte) error {
 	buf := new(bytes.Buffer)
 	if err := compressStream(buf, data); err != nil {
 		return fmt.Errorf("compress stream: %w", err)
 	}
 
-	if err := s.store.Save(buf.Bytes()); err != nil {
+	if err := s.store.Save(ctx, buf.Bytes()); err != nil {
 		return fmt.Errorf("save compressed data: %w", err)
 	}
 

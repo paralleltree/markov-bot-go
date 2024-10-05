@@ -1,8 +1,12 @@
 package blog
 
-import "github.com/paralleltree/markov-bot-go/lib"
+import (
+	"context"
+
+	"github.com/paralleltree/markov-bot-go/lib"
+)
 
 type BlogClient interface {
-	GetPostsFetcher() lib.ChunkIteratorFunc[string]
-	CreatePost(body string) error
+	GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string]
+	CreatePost(ctx context.Context, body string) error
 }

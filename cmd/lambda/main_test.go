@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/lib"
@@ -17,9 +18,9 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
-	postClient := NewRecordableBlogClient(nil)
+	postClient := blog.NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient([]string{inputText}),
+		FetchClient: blog.NewRecordableBlogClient([]string{inputText}),
 		PostClient:  postClient,
 		ChainConfig: config.DefaultChainConfig(),
 	}
@@ -40,9 +41,9 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 	// arrange
 	ctx := context.Background()
-	postClient := NewRecordableBlogClient(nil)
+	postClient := blog.NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient(nil),
+		FetchClient: blog.NewRecordableBlogClient(nil),
 		PostClient:  postClient,
 		ChainConfig: config.DefaultChainConfig(),
 	}
@@ -64,10 +65,10 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	// arrange
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
-	postClient := NewRecordableBlogClient(nil)
+	postClient := blog.NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
-		FetchClient: NewRecordableBlogClient([]string{inputText}),
-		PostClient:  NewRecordableBlogClient(nil), // discard posted content
+		FetchClient: blog.NewRecordableBlogClient([]string{inputText}),
+		PostClient:  blog.NewRecordableBlogClient(nil), // discard posted content
 		ChainConfig: config.DefaultChainConfig(),
 	}
 	store := NewMemoryStore()
@@ -96,33 +97,6 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	if !reflect.DeepEqual(wantResult, postClient.PostedContents) {
 		t.Errorf("unexpected output: want %s, but got %s", inputText, postClient.PostedContents[0])
 	}
-}
-
-type recordableBlogClient struct {
-	contents        []string
-	contentsFetched bool
-	PostedContents  []string
-}
-
-func NewRecordableBlogClient(contents []string) *recordableBlogClient {
-	return &recordableBlogClient{
-		contents: contents,
-	}
-}
-
-func (f *recordableBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIteratorFunc[string] {
-	return func() ([]string, bool, error) {
-		if f.contentsFetched {
-			return nil, false, nil
-		}
-		f.contentsFetched = true
-		return f.contents, false, nil
-	}
-}
-
-func (f *recordableBlogClient) CreatePost(ctx context.Context, body string) error {
-	f.PostedContents = append(f.PostedContents, body)
-	return nil
 }
 
 type errorBlogClient struct{}

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -13,7 +14,7 @@ const maxAttemptsCount = 100
 
 var ErrGenerationFailed = fmt.Errorf("failed to generate a post")
 
-func GenerateAndPost(client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
+func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
 	model, err := loadModel(store)
 	if err != nil {
 		return fmt.Errorf("load model: %w", err)

@@ -91,7 +91,7 @@ func main() {
 						return fmt.Errorf("load config: %w", err)
 					}
 					overrideChainConfigFromCli(&conf.ChainConfig, c)
-					return handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
+					return handler.BuildChain(c.Context, conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
 				},
 			},
 			{
@@ -108,7 +108,7 @@ func main() {
 					if c.Bool(DryRunKey) {
 						conf.PostClient = blog.NewStdIOClient()
 					}
-					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount)
+					return handler.GenerateAndPost(c.Context, conf.PostClient, store, conf.MinWordsCount)
 				},
 			},
 			{
@@ -131,7 +131,7 @@ func main() {
 					}
 
 					buildChain := func() error {
-						return handler.BuildChain(conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
+						return handler.BuildChain(c.Context, conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, store)
 					}
 
 					if !ok {
@@ -149,7 +149,7 @@ func main() {
 						}
 					}
 
-					return handler.GenerateAndPost(conf.PostClient, store, conf.MinWordsCount)
+					return handler.GenerateAndPost(c.Context, conf.PostClient, store, conf.MinWordsCount)
 				},
 			},
 		},

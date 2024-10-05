@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -14,6 +15,7 @@ import (
 
 func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
@@ -24,7 +26,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	store := NewMemoryStore()
 
 	// act
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -37,6 +39,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 
 func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
 		FetchClient: NewRecordableBlogClient(nil),
@@ -46,7 +49,7 @@ func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 	store := NewMemoryStore()
 
 	// act
-	err := run(conf, store)
+	err := run(ctx, conf, store)
 
 	// assert
 	if err == nil {
@@ -59,6 +62,7 @@ func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 
 func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelAndReturnsNoError(t *testing.T) {
 	// arrange
+	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
 	postClient := NewRecordableBlogClient(nil)
 	conf := &config.BotConfig{
@@ -69,7 +73,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	store := NewMemoryStore()
 
 	// build model
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 
@@ -83,7 +87,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 	}
 
 	// act
-	if err := run(conf, store); err != nil {
+	if err := run(ctx, conf, store); err != nil {
 		t.Errorf("run() should not return error, but got: %v", err)
 	}
 

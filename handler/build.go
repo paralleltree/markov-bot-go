@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/paralleltree/markov-bot-go/blog"
@@ -10,7 +11,7 @@ import (
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
-func BuildChain(client blog.BlogClient, analyzer morpheme.MorphemeAnalyzer, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
+func BuildChain(ctx context.Context, client blog.BlogClient, analyzer morpheme.MorphemeAnalyzer, fetchStatusCount int, stateSize int, store persistence.PersistentStore) error {
 	chain := markov.NewChain(stateSize)
 	iterator := lib.BuildIterator(client.GetPostsFetcher())
 

@@ -56,7 +56,7 @@ func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.Per
 	}
 
 	buildChain := func() error {
-		return handler.BuildChain(ctx, conf.FetchClient, analyzer, conf.FetchStatusCount, conf.StateSize, modelStore)
+		return handler.BuildChain(ctx, conf.FetchClient, analyzer, modelStore, handler.WithFetchStatusCount(conf.FetchStatusCount), handler.WithStateSize(conf.StateSize))
 	}
 
 	if !ok {
@@ -74,7 +74,7 @@ func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.Per
 		}
 	}
 
-	if err := handler.GenerateAndPost(ctx, conf.PostClient, modelStore, conf.MinWordsCount); err != nil {
+	if err := handler.GenerateAndPost(ctx, conf.PostClient, modelStore, handler.WithMinWordsCount(conf.MinWordsCount)); err != nil {
 		return fmt.Errorf("generate and post: %w", err)
 	}
 

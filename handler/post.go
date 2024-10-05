@@ -14,7 +14,24 @@ const maxAttemptsCount = 100
 
 var ErrGenerationFailed = fmt.Errorf("failed to generate a post")
 
-func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persistence.PersistentStore, minWordsCount int) error {
+type generatePostConf struct {
+	minWordsCount int
+}
+
+func WithMinWordsCount(minWordsCount int) func(c *generatePostConf) {
+	return func(c *generatePostConf) {
+		c.minWordsCount = minWordsCount
+	}
+}
+
+func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persistence.PersistentStore, optFns ...func(*generatePostConf)) error {
+	conf := &generatePostConf{
+		minWordsCount: 1,
+	}
+	for _, f := range optFns {
+		f(conf)
+	}
+
 	model, err := loadModel(ctx, store)
 	if err != nil {
 		return fmt.Errorf("load model: %w", err)
@@ -22,7 +39,7 @@ func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persiste
 
 	for i := 0; i < maxAttemptsCount; i++ {
 		generated := model.Generate()
-		if len(generated) < minWordsCount {
+		if len(generated) < conf.minWordsCount {
 			continue
 		}
 		text := strings.Join(generated, "")

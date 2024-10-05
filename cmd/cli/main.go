@@ -125,7 +125,7 @@ func main() {
 					if c.Bool(DryRunKey) {
 						conf.PostClient = blog.NewStdIOClient()
 					}
-					mod, ok, err := store.ModTime()
+					mod, ok, err := store.ModTime(c.Context)
 					if err != nil {
 						return fmt.Errorf("get modtime: %w", err)
 					}

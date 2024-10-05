@@ -37,7 +37,7 @@ func BuildChain(ctx context.Context, client blog.BlogClient, analyzer morpheme.M
 	if err != nil {
 		return fmt.Errorf("dump chain: %w", err)
 	}
-	if err := store.Save(dump); err != nil {
+	if err := store.Save(ctx, dump); err != nil {
 		return fmt.Errorf("save chain: %w", err)
 	}
 

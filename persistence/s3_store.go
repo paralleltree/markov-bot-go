@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"time"
 
@@ -34,19 +35,19 @@ func NewS3Store(
 	}, nil
 }
 
-func (s *s3Store) Load() ([]byte, error) {
+func (s *s3Store) Load(ctx context.Context) ([]byte, error) {
 	d := s3manager.NewDownloader(s.sess)
 	buf := aws.NewWriteAtBuffer([]byte{})
-	_, err := d.Download(buf, &s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
+	_, err := d.DownloadWithContext(ctx, buf, &s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
 	if err != nil {
 		return nil, fmt.Errorf("download object: %w", err)
 	}
 	return buf.Bytes(), nil
 }
 
-func (s *s3Store) ModTime() (time.Time, bool, error) {
+func (s *s3Store) ModTime(ctx context.Context) (time.Time, bool, error) {
 	client := s3.New(s.sess)
-	obj, err := client.GetObject(&s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
+	obj, err := client.GetObjectWithContext(ctx, &s3.GetObjectInput{Bucket: &s.bucketName, Key: &s.key})
 	if err != nil {
 		if awsErr, ok := err.(awserr.Error); ok {
 			switch awsErr.Code() {
@@ -59,10 +60,10 @@ func (s *s3Store) ModTime() (time.Time, bool, error) {
 	return *obj.LastModified, true, nil
 }
 
-func (s *s3Store) Save(data []byte) error {
+func (s *s3Store) Save(ctx context.Context, data []byte) error {
 	u := s3manager.NewUploader(s.sess)
 	reader := bytes.NewReader(data)
-	_, err := u.Upload(&s3manager.UploadInput{Bucket: &s.bucketName, Key: &s.key, Body: reader})
+	_, err := u.UploadWithContext(ctx, &s3manager.UploadInput{Bucket: &s.bucketName, Key: &s.key, Body: reader})
 	if err != nil {
 		return fmt.Errorf("upload object: %w", err)
 	}

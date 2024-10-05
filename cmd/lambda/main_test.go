@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
-	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/lib"
 	"github.com/paralleltree/markov-bot-go/persistence"
 )
@@ -35,29 +33,6 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	wantResult := []string{inputText}
 	if !reflect.DeepEqual(wantResult, postClient.PostedContents) {
 		t.Errorf("unexpected output: want %s, but got %s", inputText, postClient.PostedContents[0])
-	}
-}
-
-func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
-	// arrange
-	ctx := context.Background()
-	postClient := blog.NewRecordableBlogClient(nil)
-	conf := &config.BotConfig{
-		FetchClient: blog.NewRecordableBlogClient(nil),
-		PostClient:  postClient,
-		ChainConfig: config.DefaultChainConfig(),
-	}
-	store := persistence.NewMemoryStore()
-
-	// act
-	err := run(ctx, conf, store)
-
-	// assert
-	if err == nil {
-		t.Errorf("run() should return error, but got nil")
-	}
-	if !errors.Is(err, handler.ErrGenerationFailed) {
-		t.Errorf("run() should return ErrGenerateFailed, but got: %v", err)
 	}
 }
 

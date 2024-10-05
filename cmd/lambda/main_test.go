@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/paralleltree/markov-bot-go/blog"
 	"github.com/paralleltree/markov-bot-go/config"
 	"github.com/paralleltree/markov-bot-go/handler"
 	"github.com/paralleltree/markov-bot-go/lib"
+	"github.com/paralleltree/markov-bot-go/persistence"
 )
 
 func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
@@ -24,7 +24,7 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 		PostClient:  postClient,
 		ChainConfig: config.DefaultChainConfig(),
 	}
-	store := NewMemoryStore()
+	store := persistence.NewMemoryStore()
 
 	// act
 	if err := run(ctx, conf, store); err != nil {
@@ -47,7 +47,7 @@ func TestRun_WhenModelIsEmpty_ReturnsGenerateFailedError(t *testing.T) {
 		PostClient:  postClient,
 		ChainConfig: config.DefaultChainConfig(),
 	}
-	store := NewMemoryStore()
+	store := persistence.NewMemoryStore()
 
 	// act
 	err := run(ctx, conf, store)
@@ -71,7 +71,7 @@ func TestRun_WhenModelAlreadyExistsAndBuildingModelFails_PostsWithExistingModelA
 		PostClient:  blog.NewRecordableBlogClient(nil), // discard posted content
 		ChainConfig: config.DefaultChainConfig(),
 	}
-	store := NewMemoryStore()
+	store := persistence.NewMemoryStore()
 
 	// build model
 	if err := run(ctx, conf, store); err != nil {
@@ -109,29 +109,4 @@ func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIterator
 
 func (e *errorBlogClient) CreatePost(ctx context.Context, body string) error {
 	return fmt.Errorf("failed to create post")
-}
-
-type memoryStore struct {
-	content []byte
-	modTime time.Time
-}
-
-func NewMemoryStore() *memoryStore {
-	return &memoryStore{
-		content: []byte{},
-		modTime: time.Now(),
-	}
-}
-
-func (m *memoryStore) Load(ctx context.Context) ([]byte, error) {
-	return m.content, nil
-}
-
-func (m *memoryStore) ModTime(ctx context.Context) (time.Time, bool, error) {
-	return m.modTime, len(m.content) > 0, nil
-}
-
-func (m *memoryStore) Save(ctx context.Context, data []byte) error {
-	m.content = data
-	return nil
 }

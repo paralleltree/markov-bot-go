@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/paralleltree/markov-bot-go/blog"
@@ -42,7 +43,7 @@ func GenerateAndPost(ctx context.Context, client blog.BlogClient, store persiste
 		if len(generated) < conf.minWordsCount {
 			continue
 		}
-		text := strings.Join(generated, "")
+		text := strings.Join(postprocessSentence(generated), "")
 
 		if err := client.CreatePost(ctx, text); err != nil {
 			return fmt.Errorf("create status: %w", err)
@@ -62,4 +63,24 @@ func loadModel(ctx context.Context, store persistence.PersistentStore) (*markov.
 		return nil, fmt.Errorf("reconstruct chain: %w", err)
 	}
 	return chain, nil
+}
+
+func postprocessSentence(input []string) []string {
+	if len(input) < 1 {
+		return input
+	}
+
+	result := make([]string, 0, len(input))
+	result = append(result, input[0])
+	wordPattern := regexp.MustCompile(`^[A-Za-z]+$`)
+
+	for i, word := range input[1:] {
+		prev := input[i]
+		if wordPattern.MatchString(prev) && wordPattern.MatchString(word) {
+			result = append(result, " ", word)
+			continue
+		}
+		result = append(result, word)
+	}
+	return result
 }

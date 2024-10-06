@@ -69,13 +69,11 @@ func (c *MastodonClient) fetchPublicStatusesChunk(ctx context.Context, userId st
 		url = fmt.Sprintf("%s&max_id=%s", url, maxId)
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, false, "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-
-	req = req.WithContext(ctx)
 	res, err := c.client.Do(req)
 	if err != nil {
 		return nil, false, "", fmt.Errorf("get statuses: %w", err)
@@ -113,13 +111,11 @@ func (c *MastodonClient) fetchPublicStatusesChunk(ctx context.Context, userId st
 }
 
 func (c *MastodonClient) FetchUserId(ctx context.Context) (string, error) {
-	req, err := http.NewRequest("GET", c.buildUrl("/api/v1/accounts/verify_credentials"), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.buildUrl("/api/v1/accounts/verify_credentials"), nil)
 	if err != nil {
 		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-
-	req = req.WithContext(ctx)
 	res, err := c.client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("get account details: %w", err)
@@ -147,14 +143,12 @@ func (c *MastodonClient) CreatePost(ctx context.Context, payload string) error {
 	form.Add("visibility", c.PostVisibility)
 	body := strings.NewReader(form.Encode())
 
-	req, err := http.NewRequest("POST", c.buildUrl("/api/v1/statuses"), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.buildUrl("/api/v1/statuses"), body)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-
-	req = req.WithContext(ctx)
 	res, err := c.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("post status: %w", err)

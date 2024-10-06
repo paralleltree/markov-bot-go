@@ -46,6 +46,16 @@ func TestGenerateAndPost_ReturnsTextFromModel(t *testing.T) {
 		{
 			inputText: "GetPostsFetcherの呼び出し",
 		},
+		{
+			// English sentence
+			inputText: "The quick brown fox jumps over the lazy dog.",
+		},
+		{
+			inputText: "12:00:50に出力されたログ",
+		},
+		{
+			inputText: "EZ DO DANCE",
+		},
 	}
 
 	for _, tt := range cases {

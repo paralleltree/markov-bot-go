@@ -66,7 +66,7 @@ func run(ctx context.Context, conf *config.BotConfig, modelStore persistence.Per
 		}
 	}
 
-	if float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
+	if ok && float64(conf.ExpiresIn) < time.Since(mod).Seconds() {
 		// attempt to build chain if expired
 		// when building chain fails, it will use the existing chain
 		if err := buildChain(); err != nil {

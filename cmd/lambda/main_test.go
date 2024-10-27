@@ -17,12 +17,14 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	ctx := context.Background()
 	inputText := "アルミ缶の上にあるミカン"
 	postClient := blog.NewRecordableBlogClient(nil)
+	chainConfig := config.DefaultChainConfig()
+	chainConfig.ExpiresIn = 0
 	conf := &config.BotConfig{
 		FetchClient: blog.NewRecordableBlogClient([]string{inputText}),
 		PostClient:  postClient,
-		ChainConfig: config.DefaultChainConfig(),
+		ChainConfig: chainConfig,
 	}
-	store := persistence.NewMemoryStore()
+	store := NewCountableStore(persistence.NewMemoryStore())
 
 	// act
 	if err := run(ctx, conf, store); err != nil {
@@ -30,9 +32,13 @@ func TestRun_WhenModelNotExists_CreatesModel(t *testing.T) {
 	}
 
 	// assert
+	if store.saveCount != 1 {
+		t.Errorf("unexpected save count: want 1, but got %d", store.saveCount)
+	}
+
 	wantResult := []string{inputText}
 	if !reflect.DeepEqual(wantResult, postClient.PostedContents) {
-		t.Errorf("unexpected output: want %s, but got %s", inputText, postClient.PostedContents[0])
+		t.Errorf("unexpected output: want %v, but got %v", wantResult, postClient.PostedContents)
 	}
 }
 
@@ -84,4 +90,18 @@ func (e *errorBlogClient) GetPostsFetcher(ctx context.Context) lib.ChunkIterator
 
 func (e *errorBlogClient) CreatePost(ctx context.Context, body string) error {
 	return fmt.Errorf("failed to create post")
+}
+
+type countableStore struct {
+	persistence.PersistentStore
+	saveCount int
+}
+
+func NewCountableStore(store persistence.PersistentStore) *countableStore {
+	return &countableStore{PersistentStore: store}
+}
+
+func (c *countableStore) Save(ctx context.Context, data []byte) error {
+	c.saveCount++
+	return c.PersistentStore.Save(ctx, data)
 }
